@@ -1,12 +1,31 @@
 // Loka: the page. Builds each world's text, the rail and read mode, and turns scrolling into the camera path
 // the cosmos follows (camAt). The 3D scene itself is in cosmos.js.
-import { STOPS, YUGAS, DEEP } from './content.js';
+import { STOPS, YUGAS, DEEP, QUOTES, FACTS, GLOSSARY, READING } from './content.js';
 
 export const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
 export const mobile = matchMedia('(max-width:760px)');
 const $=id=>document.getElementById(id);
 
 const storyEl = document.getElementById('story');
+// the glossary: the first time a card uses a listed word, it becomes a tap-to-define term
+const GL_RX = Object.entries(GLOSSARY).map(([k,g])=>[k,new RegExp('\\b(?:'+g[2]+')\\b','i')]);
+function gloss(html, used){
+  let inA=0;
+  return html.split(/(<[^>]+>)/).map(seg=>{
+    if(seg.startsWith('<')){ if(/^<a[\s>]/i.test(seg)) inA++; else if(/^<\/a>/i.test(seg)) inA--; return seg; }
+    if(inA||!seg.trim()) return seg;
+    const hits=[];
+    for(const [k,rx] of GL_RX){ if(used.has(k)) continue; const m=rx.exec(seg);
+      if(m && !hits.some(h=>m.index<h.i+h.n && h.i<m.index+m[0].length)){ hits.push({i:m.index,n:m[0].length,k,t:m[0]}); used.add(k); } }
+    hits.sort((a,b)=>a.i-b.i); let out='', p=0;
+    for(const h of hits){ out+=seg.slice(p,h.i)+`<button type="button" class="gl" data-term="${h.k}" aria-expanded="false">${h.t}</button>`; p=h.i+h.n; }
+    return out+seg.slice(p);
+  }).join('');
+}
+// read mode's extras: a world's facts, and at the end the glossary and further reading
+const factsHTML = f=>`<div class="facts"><div class="label">At a glance</div><dl>${f.map(([k,v])=>`<div><dt>${k}</dt><dd>${v}</dd></div>`).join('')}</dl></div>`;
+const GLOSS_LIST = `<div class="glossary"><h3>Glossary</h3><dl>${Object.values(GLOSSARY).sort((a,b)=>a[0].localeCompare(b[0])).map(g=>`<div><dt>${g[0]}</dt><dd>${g[1]}</dd></div>`).join('')}</dl></div>`;
+const READING_LIST = `<div class="reading"><h3>Further reading</h3><ul>${READING.map(([t,d])=>`<li><span>${t}</span>${d}</li>`).join('')}</ul></div>`;
 // read mode's contents: every stop after the opening, grouped like the rail
 const CONTENTS = (()=>{ const G={up:'Upper worlds',earth:'Earth',low:'Lower worlds',base:'Beneath',z:'And then'}; let prev=null, h='';
   STOPS.slice(1).forEach(s=>{ if(s.grp!==prev && G[s.grp]) h+=`<li class="g">${G[s.grp]}</li>`; prev=s.grp; h+=`<li><a href="#s-${s.id}">${s.rail||s.nav}</a></li>`; });
@@ -22,14 +41,16 @@ STOPS.forEach(s=>{
   sec.className = 'stop' + (s.cls ? ' '+s.cls : '');
   sec.id = 's-'+s.id;
   const world = !s.cls, iast = s.iast && s.iast!==s.title ? s.iast : '';   // the transliteration only when it adds something
+  const used = new Set(), q = QUOTES[s.id], f = FACTS[s.id];
   sec.innerHTML = `<div class="card">
     ${s.kicker?`<div class="kicker">${s.kicker}</div>`:''}
     <h2>${s.title}</h2>
     ${s.deva||iast?`<div class="names">${s.deva?`<span class="deva" lang="sa">${s.deva}</span>`:''}${iast?`<span class="iast">${iast}</span>`:''}</div>`:''}
-    <div class="body">${s.body}</div>
+    <div class="body">${gloss(s.body,used)}</div>
     ${world?`<button class="more-btn" aria-expanded="false">Read more</button>`:''}
     <div class="x-more">
-      ${DEEP[s.id]?`<div class="deep">${s.id==='intro'?'':'<div class="label">In depth</div>'}${DEEP[s.id]}${s.id==='intro'?CONTENTS:''}</div>`:''}
+      ${q?`<figure class="quote"><blockquote>${q.text}</blockquote><figcaption>${q.cite}</figcaption></figure>`:''}
+      ${DEEP[s.id]?`<div class="deep">${s.id==='intro'?'':'<div class="label">In depth</div>'}${gloss(DEEP[s.id],used)}${f?factsHTML(f):''}${s.id==='intro'?CONTENTS:''}${s.id==='end'?GLOSS_LIST+READING_LIST:''}</div>`:''}
       ${s.extra||''}
       ${s.links?`<div class="stories-here"><div class="label">Stories here</div><ul>${s.links.map(linkHTML).join('')}</ul></div>`:''}
       ${s.src||s.versions?`<div class="meta">${s.src?`<p class="src"><b>Sources</b>${s.src}</p>`:''}${s.versions?`<details class="versions"><summary><b>Versions</b>The texts differ here</summary><p>${s.versions}</p></details>`:''}</div>`:''}
@@ -64,6 +85,22 @@ document.addEventListener('click',e=>{
   const mb=e.target.closest('.more-btn');
   if(mb){ const c=mb.closest('.card'), open=c.classList.toggle('open'); mb.setAttribute('aria-expanded',open); mb.textContent=open?'Show less':'Read more'; }
 });
+
+// tap or hover a term for its definition
+const pop=document.createElement('div'); pop.className='gpop'; pop.setAttribute('role','tooltip'); pop.id='gpop'; pop.hidden=true; document.body.appendChild(pop);
+let popFor=null; const canHover=matchMedia('(hover:hover)');
+function showGloss(b){ const g=GLOSSARY[b.dataset.term]; if(!g) return; if(popFor&&popFor!==b) popFor.setAttribute('aria-expanded','false');
+  pop.innerHTML=`<b>${g[0]}</b>${g[1]}`; pop.hidden=false; const r=b.getBoundingClientRect(), w=Math.min(300,innerWidth-24);
+  pop.style.width=w+'px'; const x=Math.min(Math.max(12,r.left-12),innerWidth-w-12); let y=r.bottom+8; if(y+pop.offsetHeight>innerHeight-12) y=r.top-pop.offsetHeight-8;
+  pop.style.left=x+'px'; pop.style.top=y+'px'; popFor=b; b.setAttribute('aria-expanded','true'); b.setAttribute('aria-describedby','gpop'); }
+function hideGloss(){ if(popFor){ popFor.setAttribute('aria-expanded','false'); popFor.removeAttribute('aria-describedby'); } pop.hidden=true; popFor=null; }
+document.addEventListener('click',e=>{ const b=e.target.closest('.gl'); if(b){ if(popFor===b&&!canHover.matches) hideGloss(); else showGloss(b); } else if(!e.target.closest('.gpop')) hideGloss(); });
+document.addEventListener('mouseover',e=>{ const b=e.target.closest('.gl'); if(b&&canHover.matches) showGloss(b); });
+document.addEventListener('mouseout',e=>{ const b=e.target.closest('.gl'); if(b&&b===popFor&&canHover.matches&&!b.contains(e.relatedTarget)) hideGloss(); });
+document.addEventListener('focusin',e=>{ const b=e.target.closest('.gl'); if(b) showGloss(b); });
+document.addEventListener('focusout',e=>{ if(e.target.closest('.gl')) hideGloss(); });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') hideGloss(); });
+addEventListener('scroll',hideGloss,{passive:true});
 
 // stories set in Bharata, one from each age; until a story is live, say "coming soon" once, not on every row
 const storyCard=(s,age,soon=true)=>{ const tag=s.href?'a':'div'; return `<${tag} class="st${s.flag?' flag':''}"${s.href?` href="${s.href}"`:''}><div class="st-t">${s.t}${s.flag?' <span class="badge">Flagship saga</span>':''}</div><div class="st-d">${s.d}</div><div class="st-s"><span>${age?age+' · ':''}${s.s}</span>${s.href?'<b>Read the saga →</b>':soon?'<em>Coming soon</em>':''}</div></${tag}>`; };
