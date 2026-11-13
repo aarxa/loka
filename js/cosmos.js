@@ -257,44 +257,94 @@ const RINGS=[
   [68,75,1,'#dcd8d0','#b8b2a8',{refl:.3,amp:.35,speed:.35,foam:.1,sheen:1,size:1.6,seed:12}],            // milk
   [75,82.5,0,'#76765a','#9a906c',{seed:13}],                                                                 // Pushkara
   [82.5,90,1,'#7fd0ff','#08457a',{refl:.75,amp:1.1,speed:1.1,foam:.6,size:.9,seed:14}] ];                    // fresh water
+// the ground, shared by the land, the oceans and the clouds: 2D noise, the height of the land, the clouds, and where it is day
+const CLOUD_Y=3.4;
+const EARTH=`
+  float h21(vec2 p){ vec3 q=fract(vec3(p.xyx)*0.1031); q+=dot(q,q.yzx+33.33); return fract((q.x+q.y)*q.z); }
+  float n21(vec2 p){ vec2 i=floor(p), f=fract(p); f=f*f*(3.0-2.0*f);
+    return mix(mix(h21(i),h21(i+vec2(1,0)),f.x),mix(h21(i+vec2(0,1)),h21(i+vec2(1,1)),f.x),f.y); }
+  float fbm2(vec2 p){ float s=0.0,w=0.5; for(int i=0;i<${lowTier?4:5};i++){ s+=w*n21(p); p=p*2.03+vec2(17.1,3.7); w*=0.5; } return s; }
+  // Jambudvipa's six ranges, which run east to west (Vishnu Purana 2.2): Nishadha, Hemakuta and Himavat to the south,
+  // Nila, Shveta and Shringin to the north. Himavat, the snowy range just north of Bharata, is the highest.
+  float ranges(vec2 p){ float h=0.0;
+    for(int i=0;i<6;i++){ int j=i<3?i:i-3; float z=(i<3?-1.0:1.0)*(3.8+1.3*float(j)), top=(i==2?2.0:0.85-0.08*float(j));
+      float hw=sqrt(max(0.0,100.0-z*z))-0.9, along=1.0-smoothstep(hw-2.0,hw,abs(p.x));
+      float w=0.42+0.12*n21(vec2(p.x*0.7,float(i)*7.0)), d=(p.y-z)/w;
+      h+=exp(-d*d)*top*along*(0.65+0.55*n21(vec2(p.x*1.3,float(i)*3.1)))*(0.8+0.4*n21(p*2.6)); }
+    return h; }
+  // the land: rolling hills and ridges, low along the coasts; in Jambudvipa, a plain round Meru and then the ranges
+  float landH(vec2 p,float rIn,float rOut,float seed){
+    float r=length(p), edge=min(rIn>0.0?r-rIn:99.0, rOut-r);
+    float hills=max(0.0,fbm2(p*0.2+seed*3.7)-0.36)*1.9;
+    float ridge=1.0-abs(fbm2(p*0.11+seed*1.3)*2.0-1.0); ridge=ridge*ridge*ridge;
+    float h=(hills+ridge*0.7)*smoothstep(0.1,2.2,edge)*1.5;
+    if(seed<1.5) h=h*0.25*smoothstep(3.0,5.0,r)+ranges(p)*smoothstep(0.1,1.2,edge);
+    return h*0.9; }
+  // the cloud deck turns slowly round Meru and drifts, its shapes slowly changing
+  float cloudAt(vec2 p){ float a=time*0.006; vec2 q=mat2(cos(a),-sin(a),sin(a),cos(a))*p*0.045;
+    float w=fbm2(q*1.2+vec2(time*0.004,-time*0.003));
+    return smoothstep(0.54,0.8,fbm2(q+w*0.7+vec2(4.0,1.0)))*smoothstep(10.0,15.0,length(p))*(1.0-smoothstep(84.0,90.0,length(p))); }   // Jambudvipa stays clear
+  // day on the side the sun is over: it circles Meru, so the line between day and night sweeps round the rings (Vishnu Purana 2.8)
+  float dayAt(vec2 p){ return smoothstep(-15.0,11.0,dot(p,normalize(sunPos.xz))+9.0); }
+`;
 const ringMat=(a,b,liquid,c1,c2,o)=>new THREE.ShaderMaterial({
   uniforms:{ time:DU.time, sky:bhuU.sky, sunPos:bhuU.sunPos, wN:{value:T.waterN}, lD:{value:T.landD}, lN:{value:T.landN},
     rIn:{value:a}, rOut:{value:b}, liquid:{value:liquid}, colA:{value:new THREE.Color(c1)}, colB:{value:new THREE.Color(c2)},
     refl:{value:o.refl??0}, amp:{value:o.amp??1}, speed:{value:o.speed??1}, foam:{value:o.foam??0}, glow:{value:o.glow??0},
     sheen:{value:o.sheen??0}, cream:{value:o.cream??0}, size:{value:o.size??1}, seed:{value:o.seed} },
-  vertexShader:`varying vec3 vW; void main(){ vec4 w=modelMatrix*vec4(position,1.0); vW=w.xyz; gl_Position=projectionMatrix*viewMatrix*w; }`,
+  vertexShader:`uniform float time,rIn,rOut,liquid,seed,amp,speed,size; uniform vec3 sunPos; varying vec3 vW,vN; varying float vH;
+  ${EARTH}
+  void main(){
+    vec4 w=modelMatrix*vec4(position,1.0); vec2 p=w.xz; float h; vec3 N;
+    if(liquid<0.5){ const float e=0.12;                    // the land rises into hills; its normal from the slope
+      h=landH(p,rIn,rOut,seed); float hx=landH(p+vec2(e,0.0),rIn,rOut,seed), hz=landH(p+vec2(0.0,e),rIn,rOut,seed);
+      N=normalize(vec3(h-hx,e,h-hz)); }
+    else {                                                  // a long, gentle swell of three crossing waves, calming at the shores
+      float r=length(p), edge=min(rIn>0.0?r-rIn:99.0, rOut-r), k=smoothstep(0.0,1.6,edge)*0.07*amp, t=time*speed;
+      vec2 d1=vec2(0.8,0.6), d2=vec2(-0.5,0.86), d3=vec2(0.2,-0.98); float f1=0.9/size, f2=1.4/size, f3=0.6/size;
+      float a1=dot(p,d1)*f1-t*1.1, a2=dot(p,d2)*f2-t*1.5, a3=dot(p,d3)*f3-t*0.8;
+      h=k*(sin(a1)+0.6*sin(a2)+0.8*sin(a3));
+      vec2 g=k*(d1*f1*cos(a1)+0.6*d2*f2*cos(a2)+0.8*d3*f3*cos(a3)); N=normalize(vec3(-g.x,1.0,-g.y)); }
+    w.y+=h; vW=w.xyz; vH=h; vN=N; gl_Position=projectionMatrix*viewMatrix*w; }`,
   fragmentShader:`uniform sampler2D sky,wN,lD,lN; uniform vec3 sunPos,colA,colB;
-  uniform float time,rIn,rOut,liquid,refl,amp,speed,foam,glow,sheen,cream,size,seed; varying vec3 vW;
+  uniform float time,rIn,rOut,liquid,refl,amp,speed,foam,glow,sheen,cream,size,seed; varying vec3 vW,vN; varying float vH;
   ${NOISE}
   ${SKYFN}
+  ${EARTH}
   void main(){
     vec2 p=vW.xz; float r=length(p);
     vec3 V=normalize(cameraPosition-vW), L=normalize(sunPos-vW);
     float edgeD=min(rIn>0.0?r-rIn:99.0, rOut-r);
+    float day=dayAt(p), dusk=day*(1.0-day)*4.0;
+    float shade=1.0-0.5*cloudAt(p+L.xz/max(L.y,0.25)*(${CLOUD_Y.toFixed(1)}-vW.y));   // the shadow of the cloud between here and the sun
+    float sunK=day*shade;
     vec3 c;
     if(liquid>0.5){
-      // two layers of real ripple normals drifting in different directions
+      // two layers of real ripple normals drifting in different directions, riding on the swell
       float t=time*speed;
       vec2 u1=p*0.055/size+vec2(t*0.011,t*0.007), u2=p*0.13/size+vec2(-t*0.016,t*0.012), u3=p*0.021/size+vec2(t*0.004,-t*0.006);
       vec3 sN=texture2D(wN,u1).rgb+texture2D(wN,u2).rgb+texture2D(wN,u3).rgb*0.8-1.4;
-      vec3 N=normalize(vec3(sN.x*amp,0.55+sN.z*0.4,sN.y*amp));
+      vec3 N=normalize(vec3(sN.x*amp+vN.x*2.5,0.55+sN.z*0.4,sN.y*amp+vN.z*2.5));
       if(cream>0.5){ float lump=fbm(vec3(p*0.6,seed+t*0.05)); N=normalize(N+vec3(lump-0.5,0.0,vnoise(vec3(p*0.6,seed))-0.5)*0.35); }
       float NV=clamp(dot(N,V),0.0,1.0);
       float fres=min(0.03+0.97*pow(1.0-NV,5.0),0.6);
-      vec3 env=min(skyAt(sky,reflect(-V,N))*1.8,vec3(0.6));
+      vec3 env=min(skyAt(sky,reflect(-V,N))*1.8,vec3(0.6));                          // the real sky, stars and all, at night too
       vec3 H=normalize(L+V);
-      float glit=pow(max(dot(N,H),0.0),900.0)*3.0*refl;                      // sun glitter on the ripples
-      float sheenSpec=pow(max(dot(N,H),0.0),240.0)*0.06*refl;
+      float glit=pow(max(dot(N,H),0.0),900.0)*3.0*refl*sunK;                          // sun glitter, by day and out of the clouds' shade
+      float sheenSpec=pow(max(dot(N,H),0.0),240.0)*0.06*refl*sunK;
       float mid=clamp(edgeD/max(0.5,(rOut-rIn)*0.5),0.0,1.0);
       vec3 body=mix(colA,colB,smoothstep(0.0,1.0,mid));
-      float scatter=0.45+0.55*max(dot(N,L),0.0);
-      c=body*scatter*(1.0-refl*fres*0.85)+env*refl*fres+vec3(1.0,0.93,0.8)*(glit+sheenSpec);
-      c+=sheen*(0.5+0.5*cos(6.2831*(fres*2.2+vec3(0.0,0.33,0.67))))*0.16*(0.25+fres);   // pearly milk
-      c+=colA*glow*(0.75+0.25*sin(time*0.5+r*0.35));                                   // ghee glows from within
-      // foam that hugs the coasts and breaks up with the ripples
+      float scatter=(0.45+0.55*max(dot(N,L),0.0))*sunK+0.09;
+      c=body*scatter*(1.0-refl*fres*0.85)+env*refl*fres*(0.35+0.65*day)+vec3(1.0,0.93,0.8)*(glit+sheenSpec);
+      c+=sheen*(0.5+0.5*cos(6.2831*(fres*2.2+vec3(0.0,0.33,0.67))))*0.16*(0.25+fres)*(0.2+0.8*day);   // pearly milk
+      c+=colA*glow*(0.75+0.25*sin(time*0.5+r*0.35));                                   // ghee glows from within, day and night
+      // foam: a band that hugs the coasts, and lines of breaking waves that roll in toward them
       float fn=texture2D(wN,u2*1.7).r*0.6+vnoise(vec3(p*1.4,t*0.3))*0.4;
       float fm=(1.0-smoothstep(0.0,0.35+0.9*fn,edgeD))*foam;
-      c=mix(c,vec3(0.92,0.95,0.97)*(0.6+0.4*max(dot(N,L),0.0)),clamp(fm*1.2,0.0,0.85));
+      float roll=pow(0.5+0.5*sin(edgeD*5.0+time*2.2*speed+fn*4.0),8.0)*(1.0-smoothstep(0.2,2.4,edgeD))*smoothstep(0.05,0.3,edgeD)*foam
+        *smoothstep(0.38,0.7,vnoise(vec3(p*0.8,time*0.25)));                           // broken into separate waves
+      fm=max(fm,roll*0.7);
+      c=mix(c,vec3(0.92,0.95,0.97)*(0.06+(0.6+0.4*max(dot(N,L),0.0))*sunK),clamp(fm*1.2,0.0,0.85));
     } else {
       // real aerial terrain, sampled at two scales so it doesn't visibly tile, then tinted per continent
       vec2 uA=p*0.075+seed*0.37, uB=p*0.019+seed*0.13;
@@ -303,23 +353,44 @@ const ringMat=(a,b,liquid,c1,c2,o)=>new THREE.ShaderMaterial({
       float lum=dot(alb,vec3(0.299,0.587,0.114));
       vec3 tint=mix(colA,colB,smoothstep(0.2,0.55,lum));
       alb=mix(alb,tint*lum*2.9,0.6);
+      // forest on the lower slopes, bare rock higher up and on the steepest faces, snow only on the highest peaks
+      float slope=1.0-vN.y, n=vnoise(vec3(p*1.7,seed));
+      alb=mix(alb,vec3(0.06,0.11,0.05)*(0.8+0.5*lum),smoothstep(0.35,0.8,vH)*(1.0-smoothstep(1.1,1.5,vH))*0.7);
+      alb=mix(alb,vec3(0.16,0.14,0.12)*(0.7+0.7*lum),clamp(smoothstep(1.0,1.45,vH+n*0.2)+smoothstep(0.55,0.8,slope)*0.6,0.0,1.0)*0.9);
+      alb=mix(alb,vec3(0.9,0.92,0.96),smoothstep(1.8,2.0,vH+n*0.25)*smoothstep(0.45,0.7,vN.y));
       vec3 nm=texture2D(lN,uA).rgb*2.0-1.0;
-      vec3 N=normalize(vec3(nm.x*1.4,nm.z,nm.y*1.4));
-      float dif=0.45+0.8*max(dot(N,L),0.0);
-      c=alb*dif;
+      vec3 N=normalize(vec3(vN.x+nm.x*0.55,vN.y,vN.z+nm.y*0.55));
+      // the land is lit from a little lower toward the sun than the sun really is, so its hills model
+      vec3 Lt=normalize(mix(L,vec3(normalize(sunPos.xz-p).x,0.0,normalize(sunPos.xz-p).y),0.45));
+      float dif=(0.14+1.05*max(dot(N,Lt),0.0))*sunK;
+      c=alb*(dif+vec3(0.07,0.09,0.16)*(1.0-day));                                     // a moonlit blue night
       float beach=1.0-smoothstep(0.0,0.35+0.5*lum,edgeD);                               // sandy coasts
-      c=mix(c,vec3(0.74,0.66,0.48)*dif,beach*0.55);
+      c=mix(c,vec3(0.74,0.66,0.48)*(dif+0.03),beach*0.55);
+      // Bharata, south of Himavat, glows softly
+      if(seed<1.5) c+=vec3(0.07,0.06,0.02)*(0.6+0.4*sin(time*1.4))*smoothstep(-6.3,-7.0,p.y)*(1.0-smoothstep(9.0,9.8,r));
     }
+    c*=mix(vec3(1.0),vec3(1.3,0.86,0.62),dusk*0.55);                                  // the warm light along the edge of the night
     if(!gl_FrontFacing) c*=0.15;
     gl_FragColor=vec4(c,1.0);
   }`,
   side:THREE.DoubleSide });
 RINGS.forEach(([a,b,liq,c1,c2,o])=>{
-  const geo=a===0?new THREE.CircleGeometry(b,160):new THREE.RingGeometry(a,b,256,3);
+  // fine meshes, so the land can rise into hills and the oceans swell
+  const q=lowTier?.55:1, geo=liq ? new THREE.RingGeometry(a,b,Math.round(384*q),Math.max(4,Math.round((b-a)*1.6*q)))
+    : new THREE.RingGeometry(a||.02,b,Math.round((a?512:480)*q),Math.max(8,Math.round((b-a)*(a?3:7)*q)));
   const m=new THREE.Mesh(geo,ringMat(a,b,liq,c1,c2,o)); m.rotation.x=-Math.PI/2; m.position.y=liq?-.04:0; bhu.add(m); });
-// Bharata, the southern part of Jambudvipa
-{ const g=new THREE.RingGeometry(3.4,9.6,48,1,Math.PI/2-.55,1.1); const m=new THREE.Mesh(g,new THREE.MeshBasicMaterial({color:'#c9d36a',transparent:true,opacity:.12,blending:AD,depthWrite:false,side:THREE.DoubleSide}));
-  m.rotation.x=-Math.PI/2; m.position.y=.06; bhu.add(m); var bharataGlow=m; }
+// the clouds: lit from the sun's side, rosy along the edge of the night, dark by night, and drifting
+{ const m=new THREE.ShaderMaterial({ uniforms:{ time:DU.time, sunPos:bhuU.sunPos }, transparent:true, depthWrite:false, side:THREE.DoubleSide,
+    vertexShader:`varying vec3 vW; void main(){ vec4 w=modelMatrix*vec4(position,1.0); vW=w.xyz; gl_Position=projectionMatrix*viewMatrix*w; }`,
+    fragmentShader:`uniform float time; uniform vec3 sunPos; varying vec3 vW;
+    ${EARTH}
+    void main(){ vec2 p=vW.xz; float d=cloudAt(p); if(d<0.01) discard;
+      float d2=cloudAt(p+normalize(sunPos.xz)*1.4), lit=clamp(0.8+(d-d2)*2.5,0.45,1.15);   // thinner toward the sun: that side is lit
+      float day=dayAt(p), dusk=day*(1.0-day)*4.0;
+      vec3 c=mix(vec3(0.06,0.07,0.11),vec3(0.95,0.96,1.0)*lit,day);
+      c=mix(c,vec3(1.0,0.62,0.4)*lit,dusk*0.5);
+      gl_FragColor=vec4(c,d*(0.45+0.4*day)); }` });
+  const clouds=new THREE.Mesh(new THREE.RingGeometry(4,92,lowTier?160:256,lowTier?12:20),m); clouds.rotation.x=-Math.PI/2; clouds.position.y=CLOUD_Y; clouds.renderOrder=2; bhu.add(clouds); }
 
 // ---- Meru: a mountain of gold rock, wider at the summit than the base (VP 2.2) ----
 const goldEnv=new THREE.PMREMGenerator(renderer).fromScene(new RoomEnvironment(renderer),.04).texture;
@@ -523,7 +594,6 @@ function frame(now){
   meruMat.emissive.setRGB(.23,.15,.03); meruCap.material.color.copy(yC.color);
   dust.material.opacity=.15+.15*yC.dharma; ambient.intensity=.3+.35*yC.dharma;
   const sf=.5+.5*yC.dharma;
-  bharataGlow.material.opacity=.1+.08*Math.sin(t*1.4);
   bhuU.sunPos.value.copy(sun.position);
 
   if(!reduce){
