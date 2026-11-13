@@ -19,13 +19,6 @@ button{font:inherit;color:inherit}
 #gl{position:fixed;inset:0;width:100vw;height:100vh;display:block;z-index:0}
 .vignette{position:fixed;inset:0;pointer-events:none;z-index:1;background:radial-gradient(ellipse at 50% 50%,transparent 50%,rgba(0,0,0,.6))}
 #labels{position:fixed;inset:0;overflow:hidden;pointer-events:none;z-index:3}
-.sl{position:absolute;left:0;top:0;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#f3d79a;white-space:nowrap;text-shadow:0 0 6px #000,0 0 2px #000;opacity:0;will-change:transform,opacity}
-.sl small{display:block;text-transform:none;letter-spacing:.02em;font-size:10.5px;color:#bba98a}
-.sl.nak{color:#cfe6f2}.sl.nak small{color:#93a9b6}
-.sl.fig{font-family:'Cormorant Garamond',serif;font-size:22px;letter-spacing:.04em;text-transform:none;font-style:italic;color:#f6dfa8;text-align:center}
-.sl.fig small{font-family:Inter,sans-serif;font-style:normal;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase}
-.sl.fig-star{font-size:11.5px;color:#fff1cf}
-.sl.compact small{display:none}
 .l3{position:absolute;left:0;top:0;font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:#f6ead0;white-space:nowrap;text-shadow:0 0 8px #000,0 0 2px #000;opacity:0;transition:opacity .4s}
 .l3::after{content:'';display:block;width:1px;height:18px;margin:4px auto 0;background:linear-gradient(#f6ead0,transparent)}
 .l3 small{display:block;text-transform:none;letter-spacing:.02em;font-size:11px;color:#cdbf9f;text-align:center}
@@ -37,8 +30,6 @@ header{position:fixed;top:0;left:0;right:0;height:58px;display:flex;align-items:
 .hbtn{background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:99px;padding:6px 14px;font-size:12.5px;cursor:pointer}
 .hbtn[aria-pressed="true"]{background:var(--gold);color:#140f05;border-color:var(--gold)}
 .hbtns{display:flex;gap:8px}
-.link.psky-btn[aria-pressed="true"]{border-color:var(--gold);background:rgba(227,185,100,.16)}
-.link.psky-btn[aria-pressed="true"]::before{content:'✓ '}
 main{position:relative;z-index:5}
 section.stop{min-height:100vh;display:flex;align-items:center;padding:90px 48px}
 .card{max-width:410px;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:24px 24px 20px;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);opacity:0;transform:translateY(28px);transition:opacity .9s ease,transform .9s ease}
@@ -163,8 +154,6 @@ body.read .hint{display:none}
   .intro .body p:nth-of-type(2){display:none}
   .intro .card{background:linear-gradient(rgba(7,6,12,0),rgba(7,6,12,.85) 25%)}
   .wt{display:none}
-  .sl small{display:none}
-  .sl.fig small{display:block}
   .dial,.dial.collapsed{left:12px;right:12px;bottom:12px;width:auto}
   .dial-full{flex-direction:column;align-items:stretch;max-height:72vh;overflow:auto;padding:12px 14px}
   .dial svg{width:140px;height:140px;margin:0 auto;order:2}
@@ -180,7 +169,7 @@ body.read .hint{display:none}
 <div class="progress" id="progress"></div>
 <header>
   <div class="brand"><span class="logo">LOKA</span><span class="wt">working title · prototype</span></div>
-  <div class="hbtns"><button id="skyBtn" class="hbtn" aria-pressed="false" title="Show the Puranic names and figures in the stars">Puranic sky</button><button id="readBtn" class="hbtn" aria-pressed="false">Read mode</button></div>
+  <div class="hbtns"><button id="readBtn" class="hbtn" aria-pressed="false">Read mode</button></div>
 </header>
 <nav class="map" id="map" aria-label="Jump to a world"></nav>
 <main id="story"></main>
@@ -216,9 +205,6 @@ import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
-import { Line2 } from 'three/addons/lines/Line2.js';
-import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
-import { LineGeometry } from 'three/addons/lines/LineGeometry.js';
 
 const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const SHOW_TIME = false;   // the time dial is parked for now; the scene stays in the Satya yuga
@@ -237,7 +223,7 @@ const YUGAS = [
     avatars:['Matsya','Kurma','Varaha','Narasimha'],
     thread:'Born as Hiranyaksha and Hiranyakashipu, slain by Varaha and Narasimha.',
     stories:[
-      {t:'Narasimha', d:'A boon with no loophole, and the god who honored every word of it.', s:'Bhagavata Purana 7.2–7.10', flag:true, href:'saga.html'},
+      {t:'Narasimha', d:'A boon with no loophole, and the god who honored every word of it.', s:'Bhagavata Purana 7.2–7.10', },
       {t:'The churning of the ocean', d:'Devas and asuras pull on Vasuki. Kurma holds up the mountain.', s:'Bhagavata Purana 8.5–8.11'},
       {t:'Varaha lifts the earth', d:'The boar dives into the cosmic waters for the drowned earth.', s:'Bhagavata Purana 3.13, 3.18–3.19'} ] },
   { name:'Treta', alt:'1,296,000 years', years:'1,296,000', frac:.3, legs:3,
@@ -287,18 +273,12 @@ const STOPS = [
   { id:'jana', nav:'Janaloka', grp:'up', y:4*S, dist:60, h:16, ang:1.25, fog:.008,
     kicker:'Upper world 5 of 7', title:'Janaloka', deva:'जनलोक', iast:'Janaloka',
     body:`<p>Home of Sanandana and the other mind-born sons of Brahma. Four of these eternal child-sages once came to Vaikuntha and were turned away at the gate. They cursed the two doorkeepers to be born on earth, three times over.</p>`,
-    links:[{label:'The curse at Vaikuntha’s gate', href:'saga.html', note:'Narasimha saga'}],
+    links:[{label:'The curse at Vaikuntha’s gate'}],
     src:'Vishnu Purana 2.7 · Bhagavata Purana 3.15–3.16' },
   { id:'mahar', nav:'Maharloka', grp:'up', y:3*S, dist:62, h:16, ang:1.7, fog:.008,
     kicker:'Upper world 4 of 7', title:'Maharloka', deva:'महर्लोक', iast:'Maharloka',
     body:`<p>Above the pole star. Those who live here last through an entire day of Brahma. When the fires of dissolution rise, they withdraw upward to Janaloka.</p>`,
     src:'Vishnu Purana 2.7, 6.3' },
-  { id:'sky', nav:'Dhruva · the sky wheel', grp:'up', y:2.5*S, dist:1.2, h:-40, ang:1.9, fog:.002, fov:100, psky:1, look:[0,2.5*S+700,0],
-    kicker:'Look up · the pole star', title:'The wheel of the sky', deva:'शिशुमार चक्र', iast:'Śiśumāra-cakra',
-    body:`<p>Here sits Dhruva, the pole star. The Bhagavata says every star and planet is tied to him and circles him, like oxen yoked to the post of a threshing floor.</p><p>Seen whole, the turning sky is one great dolphin, the Shishumara. Its head points down and its body is coiled. Dhruva is the tip of its tail, and the seven sages sit at its hips. Along its two sides run the 28 nakshatras, the houses of the moon.</p>`,
-    extra:`<div class="links"><button class="link psky-btn" aria-pressed="false">Keep the Puranic sky on as you travel</button></div>`,
-    versions:'Each age of Manu has its own seven sages. The Big Dipper carries the first seven: Marichi, Atri, Angiras, Pulastya, Pulaha, Kratu and Vasishtha; the Vishnu Purana (3.1) names a different seven for the present age. Which star marks each nakshatra also varies; these follow common modern identifications. The Bhagavata describes the dolphin only in words, so this outline is our reading of it.',
-    src:'Bhagavata Purana 5.23 · Vishnu Purana 2.9 · Star positions: NASA/Goddard SVS, Deep Star Maps 2020' },
   { id:'svar', nav:'Svarloka', grp:'up', y:2*S, dist:66, h:18, ang:2.1, fog:.008,
     kicker:'Upper world 3 of 7', title:'Svarloka', deva:'स्वर्लोक', iast:'Svarloka · Svarga',
     body:`<p>Svarga, the heaven of Indra and the devas, which stretches from the sun up to Dhruva, the pole star.</p><p>Dhruva was once a five-year-old boy. His devotion earned him the one fixed point the whole sky turns around.</p>`,
@@ -366,7 +346,7 @@ const STOPS = [
   { id:'end', nav:'A day of Brahma', grp:'z', cls:'end', y:-50, dist:860, h:-40, ang:7.0, fog:.0004,
     kicker:'And then', title:'A day of Brahma.',
     body:`<p>A thousand turns of the four ages make one day of Brahma: 4.32 billion years. Then the worlds dissolve, and it all begins again.</p>
-      <div class="ctas"><a class="cta" href="saga.html">Enter the Narasimha saga</a><button class="ghost" id="waitBtn">Join the waitlist</button></div><p class="note" id="waitNote"></p>`,
+      <div class="ctas"><button class="cta" id="waitBtn">Join the waitlist</button></div><p class="note" id="waitNote"></p>`,
     src:'Vishnu Purana 1.3' },
 ];
 
@@ -418,12 +398,6 @@ const readBtn=document.getElementById('readBtn');
 function setRead(on){ document.body.classList.toggle('read',on); readBtn.setAttribute('aria-pressed',on); try{localStorage.setItem('loka-read',on?'1':'0')}catch(e){} requestAnimationFrame(measure); }
 readBtn.addEventListener('click',()=>setRead(!document.body.classList.contains('read')));
 try{ if(localStorage.getItem('loka-read')==='1') setRead(true); }catch(e){}
-
-// the Puranic sky: names and figures drawn over the real stars, everywhere you travel
-let pskyOn=false;
-function setPsky(on){ pskyOn=on; document.querySelectorAll('#skyBtn,.psky-btn').forEach(b=>b.setAttribute('aria-pressed',on)); try{localStorage.setItem('loka-psky',on?'1':'0')}catch(e){} }
-document.addEventListener('click',e=>{ if(e.target.closest('#skyBtn,.psky-btn')) setPsky(!pskyOn); });
-try{ if(localStorage.getItem('loka-psky')==='1') setPsky(true); }catch(e){}
 
 document.addEventListener('click',e=>{
   if(e.target.id==='waitBtn'){ document.getElementById('waitNote').textContent='Prototype only: no emails are collected yet.'; }
@@ -516,7 +490,7 @@ function camAt(sc){
   else { while(i<n-2 && sc>=anchors[i+1]) i++; f=(sc-anchors[i])/Math.max(1,anchors[i+1]-anchors[i]); }
   const e=dwell(f), A=STOPS[i], B=STOPS[i+1], la=A.look||[0,A.y,0], lb=B.look||[0,B.y,0];
   return { y:lerp(A.y,B.y,e), dist:glerp(A.dist,B.dist,e), h:lerp(A.h,B.h,e), ang:lerp(A.ang,B.ang,e), fog:glerp(A.fog,B.fog,e),
-           lx:lerp(la[0],lb[0],e), ly:lerp(la[1],lb[1],e), lz:lerp(la[2],lb[2],e), fov:lerp(A.fov||50,B.fov||50,e), psky:lerp(A.psky||0,B.psky||0,e) };
+           lx:lerp(la[0],lb[0],e), ly:lerp(la[1],lb[1],e), lz:lerp(la[2],lb[2],e) };
 }
 function activeIndex(sc){ let best=0,bd=1e9; anchors.forEach((a,i)=>{ const d=Math.abs(a-sc); if(d<bd){bd=d;best=i;} }); return best; }
 let lastActive=-1;
@@ -633,128 +607,6 @@ const starsGroup=new THREE.Group(); scene.add(starsGroup);
     blending:AD, depthWrite:false, depthTest:true, transparent:true });
   const pts=new THREE.Points(g,m); pts.frustumCulled=false; pts.renderOrder=-9; starsGroup.add(pts);
 }).catch(e=>console.error('star list not loaded',e));
-
-// ---- the Puranic sky: Dhruva, the seven sages, the 28 nakshatras and the Shishumara, drawn over the real stars ----
-// Star positions are the ones drawn above (snapped to the NASA map). [id, name, star, RA°, Dec°]
-const PSTARS=[["dhruva","Dhruva","Polaris",38.01,89.25],["kratu","Kratu","Dubhe",165.89,61.74],["pulaha","Pulaha","Merak",165.45,56.38],["pulastya","Pulastya","Phecda",178.46,53.75],["atri","Atri","Megrez",-176.18,57.00],["angiras","Angiras","Alioth",-166.51,55.94],["vasishtha","Vasishtha","Mizar",-158.95,54.89],["marichi","Marichi","Alkaid",-153.15,49.35],["arundhati","Arundhati","Alcor",201.31,54.99],["n1","Ashvini","β Arietis",28.70,20.79],["n2","Bharani","41 Arietis",42.50,27.29],["n3","Krittika","the Pleiades",56.87,24.11],["n4","Rohini","Aldebaran",68.95,16.48],["n5","Mrigashira","λ Orionis",83.80,9.98],["n6","Ardra","Betelgeuse",88.81,7.43],["n7","Punarvasu","Pollux",116.32,27.99],["n8","Pushya","δ Cancri",131.18,18.15],["n9","Ashlesha","ε Hydrae",131.70,6.46],["n10","Magha","Regulus",152.09,12.00],["n11","Purva Phalguni","Zosma",168.53,20.52],["n12","Uttara Phalguni","Denebola",177.23,14.55],["n13","Hasta","δ Corvi",-172.57,-16.48],["n14","Chitra","Spica",-158.69,-11.21],["n15","Swati","Arcturus",-146.12,19.12],["n16","Vishakha","α Librae",-137.33,-16.04],["n17","Anuradha","δ Scorpii",-119.93,-22.63],["n18","Jyeshtha","Antares",-112.63,-26.41],["n19","Mula","λ Scorpii",-96.64,-37.13],["n20","Purva Ashadha","δ Sagittarii",-84.77,-29.84],["n21","Uttara Ashadha","σ Sagittarii",-76.16,-26.32],["n22","Abhijit","Vega",-80.73,38.80],["n23","Shravana","Altair",-62.36,8.83],["n24","Dhanishtha","β Delphini",-50.58,14.63],["n25","Shatabhisha","λ Aquarii",-16.83,-7.60],["n26","Purva Bhadrapada","Markab",-13.84,15.25],["n27","Uttara Bhadrapada","Algenib",3.30,15.16],["n28","Revati","ζ Piscium",18.41,7.60]];
-const PSKY=(()=>{
-  const D2R=Math.PI/180, PR=2600, AMBER='#f2cd88', SILVER='#a9d4ea';
-  const dir=(ra,de)=>{ const a=ra*D2R, d=de*D2R; return new THREE.Vector3(Math.cos(d)*Math.cos(a),Math.sin(d),-Math.cos(d)*Math.sin(a)); };
-  const S_={}; PSTARS.forEach(([id,name,west,ra,de])=>S_[id]={name,west,d:dir(ra,de)});
-  const group=new THREE.Group(); group.renderOrder=-8; scene.add(group);
-  const lines=[], mats=[];
-  // a line drawn on the sky; it can "draw itself" from its first point by growing a dash
-  function skyLine(dirs,color,width,opacity,{reveal=true,dash=0}={}){
-    const p=[]; dirs.forEach(d=>p.push(d.x*PR,d.y*PR,d.z*PR));
-    const g=new LineGeometry(); g.setPositions(p);
-    const m=new LineMaterial({color,linewidth:width,transparent:true,opacity:0,depthWrite:false,blending:AD,dashed:true,dashSize:1e7,gapSize:1e7,fog:false});
-    m.resolution.set(innerWidth,innerHeight);
-    const l=new Line2(g,m); l.computeLineDistances(); l.frustumCulled=false;
-    let L=0; for(let i=3;i<p.length;i+=3) L+=Math.hypot(p[i]-p[i-3],p[i+1]-p[i-2],p[i+2]-p[i-1]);
-    lines.push({m,L,opacity,reveal,dash}); mats.push(m); group.add(l); return l; }
-  const RING=(()=>{ const c=document.createElement('canvas'); c.width=c.height=64; const g=c.getContext('2d');
-    g.strokeStyle='#fff'; g.lineWidth=3; g.beginPath(); g.arc(32,32,24,0,Math.PI*2); g.stroke(); const t=new THREE.CanvasTexture(c); t.colorSpace=THREE.SRGBColorSpace; return t; })();
-  const rings=[];
-  function ringPts(ids,size,color){ const pos=[]; ids.forEach(id=>{ const d=S_[id].d; pos.push(d.x*PR*.999,d.y*PR*.999,d.z*PR*.999); });
-    const g=new THREE.BufferGeometry(); g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));
-    const m=new THREE.PointsMaterial({size,sizeAttenuation:false,map:RING,color,transparent:true,opacity:0,depthWrite:false,blending:AD,fog:false});
-    const pts=new THREE.Points(g,m); pts.frustumCulled=false; group.add(pts); rings.push(m); }
-
-  // the seven sages: the Big Dipper
-  const D=id=>S_[id].d;
-  [['kratu','pulaha','pulastya','atri','kratu'],['atri','angiras','vasishtha','marichi']].forEach(c=>skyLine(c.map(D),AMBER,1.3,.85));
-  ringPts(['kratu','pulaha','pulastya','atri','angiras','vasishtha','marichi'],17,AMBER);
-  ringPts(['dhruva'],30,AMBER);
-
-  // the ecliptic, the path of the sun and moon, and the nakshatras' junction stars along it
-  const eps=23.4393*D2R, ecl=[]; for(let i=0;i<=360;i+=2){ const l=i*D2R; ecl.push(new THREE.Vector3(Math.cos(l),Math.sin(l)*Math.sin(eps),-Math.sin(l)*Math.cos(eps))); }
-  skyLine(ecl,SILVER,1,.32,{reveal:false,dash:1});
-  const NAK=PSTARS.filter(s=>s[0][0]==='n').map(s=>s[0]);
-  ringPts(NAK,14,SILVER);
-
-  // the Shishumara (Bhagavata 5.23): Dhruva at the tip of the tail, the seven sages at the hips, head turned down
-  // (outward, away from the pole), body coiled. Drawn in the plane that touches the sky at the pole, so it looks
-  // right when you look straight up: angle = RA, radius = tan(distance from the pole).
-  const toSky=([u,v])=>{ const p=Math.atan(Math.hypot(u,v)), th=Math.atan2(v,u), de=Math.PI/2-p; return new THREE.Vector3(Math.cos(de)*Math.cos(th),Math.sin(de),-Math.cos(de)*Math.sin(th)); };
-  const sm=(a,b,x)=>{ const t=Math.min(1,Math.max(0,(x-a)/(b-a))); return t*t*(3-2*t); };
-  const spine=s=>{ const th=(38+330*s)*D2R, p=(.74+40*Math.pow(s,.4)+4*Math.pow(Math.max(0,s-.9)/.1,2))*D2R, r=Math.tan(p); return [r*Math.cos(th),r*Math.sin(th)]; };
-  const halfW=s=> s<.5 ? .013+.087*Math.pow(sm(0,.5,s),.7) : s<.8 ? .1-.015*(s-.5)/.3 : s<.93 ? .085+(.032-.085)*sm(.8,.93,s) : .016+(.005-.016)*(s-.93)/.07;
-  const add=(a,b,k=1)=>[a[0]+b[0]*k,a[1]+b[1]*k];
-  const frame=s=>{ const a=spine(Math.max(0,s-.004)), b=spine(Math.min(1,s+.004)); let t=[b[0]-a[0],b[1]-a[1]]; const n=Math.hypot(t[0],t[1])||1; t=[t[0]/n,t[1]/n];
-    let N=[-t[1],t[0]]; const P=spine(s); if(N[0]*P[0]+N[1]*P[1]<0) N=[-N[0],-N[1]]; return {P,T:t,N}; };   // N points away from the pole: the back
-  const edge=(s,side)=>{ const f=frame(s); return add(f.P,f.N,side*halfW(s)); };
-  const quad=(a,c,b,n=14)=>{ const o=[]; for(let i=1;i<=n;i++){ const t=i/n, u=1-t; o.push([u*u*a[0]+2*u*t*c[0]+t*t*b[0],u*u*a[1]+2*u*t*c[1]+t*t*b[1]]); } return o; };
-  // tail flukes around Dhruva
-  const f0=frame(0), tip=spine(0), back=[-f0.T[0],-f0.T[1]], S0=.05;
-  const lobe=side=>{ const A=add(add(tip,f0.N,side*.13),back,.07), notch=add(tip,back,.006);
-    return [notch,...quad(notch,add(add(tip,f0.N,side*.07),back,.026),A,12),...quad(A,add(add(tip,f0.N,side*.075),back,-.016),edge(S0,side),12)]; };
-  const side=sd=>{ const o=lobe(sd); for(let i=1;i<=240;i++){ const s=S0+(1-S0)*i/240; o.push(edge(s,sd)); } o.push(add(spine(1),frame(1).T,.012)); return o; };
-  skyLine(side(1).map(toSky),AMBER,1.6,.8); skyLine(side(-1).map(toSky),AMBER,1.6,.8);
-  // dorsal fin on the back, a flipper on the belly side, the eye
-  { const b1=edge(.56,1), b2=edge(.68,1), f=frame(.555), tipF=add(add(f.P,f.N,halfW(.555)+.11),f.T,-.02);
-    skyLine([b2,...quad(b2,add(edge(.64,1),frame(.64).N,.07),tipF),...quad(tipF,add(edge(.575,1),frame(.575).N,.03),b1)].map(toSky),AMBER,1.4,.75); }
-  { const b1=edge(.79,-1), b2=edge(.835,-1), f=frame(.75), tipF=add(f.P,f.N,-(halfW(.75)+.085));
-    skyLine([b2,...quad(b2,add(edge(.80,-1),frame(.80).N,-.06),tipF),...quad(tipF,add(edge(.775,-1),frame(.775).N,-.02),b1)].map(toSky),AMBER,1.3,.7); }
-  { const f=frame(.885), c=add(f.P,f.N,halfW(.885)*.35), e=[]; for(let i=0;i<=24;i++){ const a=i/24*Math.PI*2; e.push([c[0]+Math.cos(a)*.011,c[1]+Math.sin(a)*.011]); }
-    skyLine(e.map(toSky),AMBER,1.3,.8); }
-  // a faint glow inside the body, brighter towards its outline
-  const fillU={a:{value:0},col:{value:new THREE.Color(AMBER)}};
-  { const pos=[], acr=[], idx=[]; const N=200;
-    for(let i=0;i<=N;i++){ const s=S0+(1-S0)*i/N; [1,-1].forEach(sd=>{ const d=toSky(edge(s,sd)); pos.push(d.x*PR*1.001,d.y*PR*1.001,d.z*PR*1.001); acr.push(sd); }); }
-    for(let i=0;i<N;i++){ const a=i*2; idx.push(a,a+1,a+2, a+1,a+3,a+2); }
-    const g=new THREE.BufferGeometry(); g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3)); g.setAttribute('across',new THREE.Float32BufferAttribute(acr,1)); g.setIndex(idx);
-    const m=new THREE.ShaderMaterial({uniforms:fillU,
-      vertexShader:`attribute float across; varying float vA; void main(){ vA=across; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
-      fragmentShader:`uniform float a; uniform vec3 col; varying float vA; void main(){ float k=abs(vA); gl_FragColor=vec4(col*(0.018+0.07*k*k*k*k)*a,1.0); }`,
-      transparent:true, depthWrite:false, blending:AD, side:THREE.DoubleSide});
-    const mesh=new THREE.Mesh(g,m); mesh.frustumCulled=false; group.add(mesh); }
-
-  // labels: names in the sky
-  const labels=[];
-  const mk=(d,html,cls,dx=12,dy=0)=>{ const el=document.createElement('div'); el.className='sl '+cls; el.innerHTML=html; document.getElementById('labels').appendChild(el); labels.push({d,el,cls,dx,dy}); };
-  mk(S_.dhruva.d,'Dhruva<small>Polaris · the tip of the tail</small>','fig-star',18,-4);
-  ['kratu','pulaha','pulastya','atri','angiras','vasishtha','marichi'].forEach(id=>mk(S_[id].d,`${S_[id].name}<small>${S_[id].west}</small>`,'rishi'));
-  mk(S_.arundhati.d,'Arundhati<small>Alcor, beside Vasishtha</small>','rishi');
-  NAK.forEach(id=>mk(S_[id].d,`${S_[id].name}<small>${S_[id].west}</small>`,'nak'));
-  { const f=frame(.62); mk(toSky(add(f.P,f.N,-(halfW(.62)+.05))),'Shishumara<small>the dolphin of the sky · BP 5.23</small>','fig',0,0); }
-
-  const OPAQUE=[{y:0,r:95},{y:-8.5*S+2,r:38}];   // the earth's disc out to Lokaloka, and Shesha's coils
-  const RANK={'fig-star':0,fig:1,rishi:2,nak:3}, order=labels.slice().sort((a,b)=>RANK[a.cls]-RANK[b.cls]);
-  document.fonts&&document.fonts.ready.then(()=>labels.forEach(l=>l.w=0));
-  addEventListener('resize',()=>mats.forEach(m=>m.resolution.set(innerWidth,innerHeight)));
-  const v=new THREE.Vector3();
-  let fig=0, nak=0;
-  return {
-    update(dt, stopK, on){
-      // the figures always show at the sky stop; the toggle shows everything everywhere
-      const tf=Math.max(stopK,on?1:0), tn=Math.max(stopK*.85,on?1:0), k=Math.min(1,dt*2.2);
-      fig+=(tf-fig)*k; nak+=(tn-nak)*k; if(fig<.003) fig=0; if(nak<.003) nak=0;
-      group.visible=fig>0||nak>0; group.position.copy(camera.position);
-      const rev=sm(0,.85,fig), fa=Math.min(1,fig*1.6);
-      lines.forEach(l=>{ const a=l.dash?nak:fa; l.m.opacity=l.opacity*a; l.m.dashSize=l.dash? PR*.012 : l.reveal? Math.max(.001,rev*l.L) : 1e7; l.m.gapSize=l.dash? PR*.008 : 1e7; });
-      rings[0].opacity=.75*fa; rings[1].opacity=.9*fa; rings[2].opacity=.55*nak; fillU.a.value=rev;
-    },
-    labels(taken){
-      const placed=taken.slice(), P=3, c=camera.position;
-      order.forEach(l=>{ const a=l.cls==='nak'?nak:fig, hide=()=>{ if(l.on){ l.el.style.opacity=0; l.on=false; } };
-        if(a<.02) return hide();
-        v.copy(l.d).multiplyScalar(PR).add(camera.position).project(camera);
-        if(!(v.z<1 && Math.abs(v.x)<1.02 && Math.abs(v.y)<1.02)) return hide();
-        if(OPAQUE.some(o=>{ const t=(o.y-c.y)/l.d.y; return t>0 && Math.hypot(c.x+l.d.x*t,c.z+l.d.z*t)<o.r; })) return hide();
-        const x=(v.x+1)/2*innerWidth, y=(1-v.y)/2*innerHeight;
-        if(!l.w){ l.el.classList.remove('compact'); l.w=l.el.offsetWidth; l.h=l.el.offsetHeight; l.el.classList.add('compact'); l.cw=l.el.offsetWidth; l.ch=l.el.offsetHeight; l.el.classList.toggle('compact',!!l.cmp); }
-        // try beside the star with its second line; if it's crowded, try the name alone
-        const fit=(w,h)=>{ const dx=l.dx, cands=l.cls==='fig'?[[-w/2,-h/2]]:[[dx,-h/2+l.dy],[-dx-w,-h/2],[dx-4,6],[dx-4,-h-6],[-dx-w+4,6],[-dx-w+4,-h-6],[dx+6,h*.6+6],[dx+6,-h*1.6-6]];
-          for(const [ox,oy] of cands){ const b=[x+ox-P,y+oy-P,x+ox+w+P,y+oy+h+P]; if(!placed.some(q=>b[0]<q[2]&&b[2]>q[0]&&b[1]<q[3]&&b[3]>q[1])) return b; } return null; };
-        let cmp=false, box=fit(l.w,l.h); if(!box&&l.cls!=='fig'){ box=fit(l.cw,l.ch); cmp=true; }
-        if(!box) return hide();
-        if(cmp!==!!l.cmp){ l.cmp=cmp; l.el.classList.toggle('compact',cmp); }
-        placed.push(box); l.on=true; l.el.style.opacity=l.cls==='nak'?a*.9:a;
-        l.el.style.transform=`translate(${(box[0]+P).toFixed(1)}px,${(box[1]+P).toFixed(1)}px)`;
-      });
-    }
-  };
-})();
 
 // faint near dust, so travelling between worlds has parallax (the sky itself is infinitely far)
 { const pos=[]; for(let i=0;i<1600;i++){ const a=Math.random()*Math.PI*2, r=rnd(30,240); pos.push(Math.cos(a)*r,rnd(-400,300),Math.sin(a)*r); }
@@ -1127,16 +979,14 @@ const LABELS=[
   {pos:sun.position, t:'The sun', s:'Bhuvarloka ends here', dyn:true},
 ];
 LABELS.forEach(l=>{ const d=document.createElement('div'); d.className='l3'; d.innerHTML=`${l.t}<small>${l.s}</small>`; labelsEl.appendChild(d); l.el=d; });
-const tmp=new THREE.Vector3(), labelBoxes=[];
+const tmp=new THREE.Vector3();
 function updateLabels(){
-  labelBoxes.length=0;
   LABELS.forEach(l=>{
     const p=l.dyn?tmp.copy(l.pos).add(new THREE.Vector3(0,7,0)):tmp.copy(l.pos);
     const near=Math.abs(cur.ly-p.y)<34 && camera.position.distanceTo(p)<230;
     p.project(camera); const vis=near && p.z<1 && Math.abs(p.x)<1.1 && Math.abs(p.y)<1.1;
     l.el.style.opacity=vis?1:0;
-    if(vis){ const x=(p.x+1)/2*innerWidth, y=(1-p.y)/2*innerHeight; l.el.style.transform=`translate(${x.toFixed(1)}px,${y.toFixed(1)}px) translate(-50%,-100%)`;
-      if(!l.w){ l.w=l.el.offsetWidth; l.h=l.el.offsetHeight; } labelBoxes.push([x-l.w/2-4,y-l.h-4,x+l.w/2+4,y+4]); }
+    if(vis){ l.el.style.transform=`translate(${((p.x+1)/2*innerWidth).toFixed(1)}px,${((1-p.y)/2*innerHeight).toFixed(1)}px) translate(-50%,-100%)`; }
   });
 }
 
@@ -1187,7 +1037,6 @@ function frame(now){
   const a=cur.ang+drift, d=cur.dist*(camera.aspect<.8?1.35:1);
   camera.position.set(Math.sin(a)*d,cur.y+cur.h,Math.cos(a)*d);
   camera.lookAt(cur.lx,cur.ly,cur.lz);
-  { const fv=Math.min(125,cur.fov*(camera.aspect<.8?1.2:1)); if(Math.abs(camera.fov-fv)>.01){ camera.fov=fv; camera.updateProjectionMatrix(); } }
   scene.fog.density=cur.fog*(camera.aspect<.8?.8:1);
 
   const k2=1-Math.exp(-dt*2.2);
@@ -1204,9 +1053,9 @@ function frame(now){
     eggMat.uniforms.time.value=t; eggMat.uniforms.col.value.copy(yC.color).lerp(new THREE.Color('#ffd58a'),.6);
     finish.uniforms.flash.value=reduce?0:nearK*.18; }
   finish.uniforms.time.value=t;
-  axisMat.color.copy(yC.color); dharmaPts.material.color.copy(yC.color); axisMat.opacity=.45*(1-cur.psky);
-  lotus.visible=cur.psky<.2; dhruvaFade.value=THREE.MathUtils.smoothstep(camera.position.distanceTo(dhruva.position),14,32);
-  { const m=dharmaPts.material, tgt=(Math.abs(cur.ly)<12?.03:.4)*(1-cur.psky); m.opacity+=(tgt-m.opacity)*Math.min(1,dt*3); }   // the rising motes would haze the view of the earth
+  axisMat.color.copy(yC.color); dharmaPts.material.color.copy(yC.color);
+  dhruvaFade.value=THREE.MathUtils.smoothstep(camera.position.distanceTo(dhruva.position),14,32);
+  { const m=dharmaPts.material, tgt=Math.abs(cur.ly)<12?.03:.4; m.opacity+=(tgt-m.opacity)*Math.min(1,dt*3); }   // the rising motes would haze the view of the earth
   dGeo.setDrawRange(0,Math.round(DN*(.12+.88*yC.dharma)));
   meruMat.emissive.setRGB(.23,.15,.03); meruCap.material.color.copy(yC.color);
   dust.material.opacity=.15+.15*yC.dharma; ambient.intensity=.3+.35*yC.dharma;
@@ -1232,9 +1081,8 @@ function frame(now){
       // and one the camera is passing through, near its centre (on the way to and from the sky stop)
       const inside=Math.abs(g.position.y-camera.position.y)<9 && Math.hypot(camera.position.x,camera.position.z)<55;
       g.userData.fade+=((between||inside?0:1)-g.userData.fade)*Math.min(1,dt*3); g.userData.mats.forEach(m=>m.uniforms.fade.value=g.userData.fade); }); }
-  PSKY.update(dt,cur.psky,pskyOn);
   composer.render();
-  updateLabels(); PSKY.labels(labelBoxes);
+  updateLabels();
 }
 requestAnimationFrame(frame);
 }

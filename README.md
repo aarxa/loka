@@ -18,8 +18,7 @@ Then go to <http://localhost:5173>. You can also open `index.html` straight from
 
 | Path | What it is |
 | --- | --- |
-| `index.html` | The cosmos homepage: the egg of the universe, the fourteen worlds, Mount Meru, Ananta Shesha and the Puranic sky |
-| `saga.html` | The Narasimha saga, the first story |
+| `index.html` | The cosmos homepage: the egg of the universe, the fourteen worlds, Mount Meru and Ananta Shesha |
 | `assets/sky/` | The real night sky (NASA star map) and the 7,000 brightest stars taken from it |
 | `assets/tex/` | Textures for the oceans, continents, Meru and Shesha |
 | `assets/models/` | Shesha's hooded heads |
@@ -30,6 +29,11 @@ Three.js 0.160 and the fonts load from public CDNs, so there's no build step.
 ## Working on it
 
 `main` is the working version. New work goes on its own branch and comes back into `main` through a pull request.
+
+In progress on their own branches:
+
+- `narasimha-saga`: the first story, being improved before it goes live
+- `puranic-sky`: Dhruva, the seven sages, the 28 nakshatras and the Shishumara, drawn over the real stars
 
 ## Credits
 
