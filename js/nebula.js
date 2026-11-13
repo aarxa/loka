@@ -34,22 +34,22 @@ const PAINT = `
     float fine=ridged(p*3.1+4.0*w1+vec2(7.7,3.3));
     // the outline: ragged lobes, thinning to nothing at the rim
     float lobes=smoothstep(0.32,0.7,fbm(q*1.6+seed*vec2(2.3,5.1)+w1*0.6));
-    float shape=(1.0-smoothstep(0.12,1.0,r))*mix(0.3,1.0,lobes);                       // feathered all the way out
+    float shape=(1.0-smoothstep(0.2,1.0,r))*mix(0.25,1.0,lobes);                       // feathered toward the rim
     float dens=smoothstep(0.42,0.85,smoke)*shape;
-    float fil=smoothstep(0.45,1.3,veins)*smoothstep(0.3,0.62,smoke)*shape;           // filaments live in the gas, not the void
+    float fil=smoothstep(0.5,1.22,veins)*smoothstep(0.32,0.62,smoke)*shape;          // filaments live in the gas, not the void
     float fil2=smoothstep(0.8,1.5,fine)*shape*smoothstep(0.3,0.6,smoke);
     float core=exp(-r*r*14.0);                                                        // the star's light on the gas near it
     float heat=dens*0.45+fil*1.45+fil2*1.0+core*1.0;
-    vec3 e=fire(heat)*(dens*0.2+fil*1.9+fil2*1.0)*(0.6+1.1*core);
-    e+=fire(0.4+0.5*core)*smoothstep(0.25,0.7,smoke)*shape*0.045;                    // a faint red haze through the whole cloud
+    vec3 e=fire(heat)*(dens*0.16+fil*2.0+fil2*1.08)*(0.6+1.1*core);
+    e+=fire(0.4+0.5*core)*smoothstep(0.25,0.7,smoke)*shape*0.022;                    // a faint red haze through the whole cloud
     e+=vec3(0.42,0.14,1.0)*fil2*(1.0-shape)*smoothstep(1.0,0.5,r)*0.8;               // violet sparks out in the thin gas
-    float alpha=clamp(dens*0.6+fil*0.15,0.0,1.0);
+    float alpha=clamp(dens*0.75+fil*0.24,0.0,1.0);
     // stored gently compressed, so the faint smoke keeps its detail in eight bits
     gl_FragColor=vec4(sqrt(clamp(e/4.0,0.0,1.0)),alpha); }`;
 
 function paint(renderer, size, seed) {
   const rt = new THREE.WebGLRenderTarget(size, size, { generateMipmaps: true, minFilter: THREE.LinearMipmapLinearFilter, magFilter: THREE.LinearFilter });
-  rt.texture.anisotropy = Math.min(4, renderer.capabilities.getMaxAnisotropy());
+  rt.texture.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
   const scene = new THREE.Scene(), cam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
   const quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), new THREE.ShaderMaterial({ uniforms: { seed: { value: seed } }, fragmentShader: PAINT,
     vertexShader: `varying vec2 vUv; void main(){ vUv=uv; gl_Position=vec4(position.xy,0.0,1.0); }`, depthTest: false, depthWrite: false }));
@@ -84,16 +84,16 @@ export function makeNebula(o) {
           q+=0.012*vec2(sin(q.y*5.0+time*0.35),cos(q.x*4.0-time*0.3));
           if(dot(q,q)>1.0) discard;
           vec2 uv=q*0.5+0.5;
-          // the sharp fire, and round it the same fire blurred (a smaller copy the graphics card keeps anyway),
-          // so every filament sits in its own soft light
-          vec4 t=texture2D(art,uv), b1=texture2D(art,uv,4.2);
-          vec3 e=t.rgb*t.rgb*4.0+b1.rgb*b1.rgb*4.0*0.27;
-          float op=mix(t.a,b1.a,0.55);
+          // the sharp fire, and close round it a little of the same fire blurred (a smaller copy the graphics card
+          // keeps anyway, read at a fixed size so it skips the costly sharp filtering): a tight glow on each filament
+          vec4 t=texture2D(art,uv), b1=textureLod(art,uv,3.0);
+          vec3 e=t.rgb*t.rgb*4.0+b1.rgb*b1.rgb*4.0*0.14;
+          float op=mix(t.a,b1.a,0.3);
           float flicker=0.85+0.15*sin(time*1.7+dot(q,vec2(9.0,7.0))+turn);
           // a sheet seen edge-on would show as a line: fade it out as the view flattens
           float side=smoothstep(0.05,0.3,abs(normalize(cameraPosition-vW).y));
           float k=weight*side*fade;
-          gl_FragColor=vec4(e*k*flicker*3.1,op*k*0.18); }` });
+          gl_FragColor=vec4(e*k*flicker*3.6,op*k*0.2); }` });
     const sheet = new THREE.Mesh(new THREE.CircleGeometry(1, 96), m);
     sheet.scale.setScalar(o.R); sheet.rotation.x = -Math.PI / 2; sheet.position.y = u * o.H; sheet.frustumCulled = false;
     group.add(sheet); mats.push(m);
