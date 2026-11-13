@@ -50,7 +50,6 @@ print('hoodFront', out['hoodFront'], 'snout', out['snout'], 'headTop', out['head
 
 js = json.dumps(out, separators=(',', ':'))
 open(out_dir + '/shesha_hood.json', 'w').write(js)
-open(out_dir + '/shesha_hood.js', 'w').write('/* ' + out['credit'] + ' */\nwindow.LOKA_COBRA=' + js + ';\n')
 print('json bytes', len(js))
 
 # textures: python skin -> pale moon-white with a slate-blue pattern; normals kept as they are
