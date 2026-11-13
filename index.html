@@ -223,7 +223,7 @@ const YUGAS = [
     avatars:['Matsya','Kurma','Varaha','Narasimha'],
     thread:'Born as Hiranyaksha and Hiranyakashipu, slain by Varaha and Narasimha.',
     stories:[
-      {t:'Narasimha', d:'A boon with no loophole, and the god who honored every word of it.', s:'Bhagavata Purana 7.2–7.10', },
+      {t:'Narasimha', d:'A boon with no loophole, and the god who honored every word of it.', s:'Bhagavata Purana 7.2–7.10', flag:true, href:'saga.html'},
       {t:'The churning of the ocean', d:'Devas and asuras pull on Vasuki. Kurma holds up the mountain.', s:'Bhagavata Purana 8.5–8.11'},
       {t:'Varaha lifts the earth', d:'The boar dives into the cosmic waters for the drowned earth.', s:'Bhagavata Purana 3.13, 3.18–3.19'} ] },
   { name:'Treta', alt:'1,296,000 years', years:'1,296,000', frac:.3, legs:3,
@@ -273,7 +273,7 @@ const STOPS = [
   { id:'jana', nav:'Janaloka', grp:'up', y:4*S, dist:60, h:16, ang:1.25, fog:.008,
     kicker:'Upper world 5 of 7', title:'Janaloka', deva:'जनलोक', iast:'Janaloka',
     body:`<p>Home of Sanandana and the other mind-born sons of Brahma. Four of these eternal child-sages once came to Vaikuntha and were turned away at the gate. They cursed the two doorkeepers to be born on earth, three times over.</p>`,
-    links:[{label:'The curse at Vaikuntha’s gate'}],
+    links:[{label:'The curse at Vaikuntha’s gate', href:'saga.html', note:'Narasimha saga'}],
     src:'Vishnu Purana 2.7 · Bhagavata Purana 3.15–3.16' },
   { id:'mahar', nav:'Maharloka', grp:'up', y:3*S, dist:62, h:16, ang:1.7, fog:.008,
     kicker:'Upper world 4 of 7', title:'Maharloka', deva:'महर्लोक', iast:'Maharloka',
@@ -346,7 +346,7 @@ const STOPS = [
   { id:'end', nav:'A day of Brahma', grp:'z', cls:'end', y:-50, dist:860, h:-40, ang:7.0, fog:.0004,
     kicker:'And then', title:'A day of Brahma.',
     body:`<p>A thousand turns of the four ages make one day of Brahma: 4.32 billion years. Then the worlds dissolve, and it all begins again.</p>
-      <div class="ctas"><button class="cta" id="waitBtn">Join the waitlist</button></div><p class="note" id="waitNote"></p>`,
+      <div class="ctas"><a class="cta" href="saga.html">Enter the Narasimha saga</a><button class="ghost" id="waitBtn">Join the waitlist</button></div><p class="note" id="waitNote"></p>`,
     src:'Vishnu Purana 1.3' },
 ];
 

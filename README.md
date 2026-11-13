@@ -19,6 +19,7 @@ Then go to <http://localhost:5173>. You can also open `index.html` straight from
 | Path | What it is |
 | --- | --- |
 | `index.html` | The cosmos homepage: the egg of the universe, the fourteen worlds, Mount Meru and Ananta Shesha |
+| `saga.html` | The Narasimha saga, the first story |
 | `assets/sky/` | The real night sky (NASA star map) and the 7,000 brightest stars taken from it |
 | `assets/tex/` | Textures for the oceans, continents, Meru and Shesha |
 | `assets/models/` | Shesha's hooded heads |

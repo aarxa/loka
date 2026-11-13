@@ -1,0 +1,905 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Narasimha Saga Prototype</title>
+<meta name="description" content="Narasimha: the boon with no way out, and the god who kept every word of it. A sourced, illustrated retelling from the Bhagavata Purana, book 7.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@400;500;600&family=Tiro+Devanagari+Sanskrit&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#07060c;--ink:#efe7d6;--muted:#a79d8a;--gold:#e3b964;--line:rgba(227,185,100,.22);--panel:rgba(10,8,16,.7)}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,sans-serif;font-size:15.5px;line-height:1.62}
+body{overflow-x:hidden}
+button{font:inherit;color:inherit}
+a{color:inherit}
+header{position:fixed;top:0;left:0;right:0;height:58px;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 20px;z-index:30;background:linear-gradient(rgba(7,6,12,.85),rgba(7,6,12,0))}
+.hl{display:flex;align-items:center;gap:14px;min-width:0}
+.back{font-size:12.5px;text-decoration:none;border:1px solid var(--line);border-radius:99px;padding:6px 12px;background:rgba(255,255,255,.04);white-space:nowrap}
+.back:hover{border-color:var(--gold)}
+.htitle{font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:600;letter-spacing:.04em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.htitle span{color:var(--muted);font-family:Inter,sans-serif;font-size:11.5px;font-weight:400;margin-left:8px;letter-spacing:.06em}
+.hbtn{background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:99px;padding:6px 14px;font-size:12.5px;cursor:pointer;white-space:nowrap}
+.hbtn[aria-pressed="true"]{background:var(--gold);color:#140f05;border-color:var(--gold)}
+.progress{position:fixed;top:0;left:0;height:2px;width:0;background:var(--gold);z-index:40;box-shadow:0 0 8px var(--gold)}
+#fx{position:fixed;inset:0;width:100vw;height:100vh;pointer-events:none;z-index:1}
+
+/* chapters */
+.chapter{position:relative}
+.stage{position:sticky;top:0;height:100vh;overflow:hidden;z-index:0}
+.stage svg{position:absolute;inset:0;width:100%;height:100%;display:block}
+.stage::after{content:'';position:absolute;inset:0;pointer-events:none;background:linear-gradient(90deg,rgba(5,4,9,.62),rgba(5,4,9,.15) 45%,transparent 65%),radial-gradient(ellipse at 60% 50%,transparent 55%,rgba(0,0,0,.45))}
+.beats{position:relative;z-index:2;margin-top:-100vh}
+.chapter[data-scene=gate] .stage::after{background:linear-gradient(90deg,rgba(24,14,6,.8),rgba(24,14,6,.4) 42%,transparent 68%)}
+.beat{min-height:85vh;display:flex;align-items:center;padding:90px 48px}
+.beat:last-child{min-height:105vh}
+.card{max-width:420px;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:22px 24px 20px;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+.card p{margin:0 0 12px}
+.card p:last-child{margin-bottom:0}
+.kicker{font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);margin-bottom:6px}
+h3{font-family:'Cormorant Garamond',serif;font-weight:500;font-size:34px;line-height:1.05;margin:0 0 12px}
+.lead{font-family:'Cormorant Garamond',serif;font-size:22px;line-height:1.35}
+.src{margin:14px 0 0 !important;font-size:12px;color:var(--muted);border-top:1px solid var(--line);padding-top:10px}
+.src::before{content:'Source · ';color:var(--gold)}
+.nm{background:none;border:0;padding:0;font:inherit;color:inherit;border-bottom:1px dotted var(--gold);cursor:pointer}
+.nm:hover,.nm:focus-visible{color:var(--gold);outline:none}
+.why{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.05);border:1px solid var(--line);border-radius:99px;padding:4px 11px;font-size:12.5px;cursor:pointer;margin-top:4px}
+.why::before{content:'?';display:inline-grid;place-items:center;width:16px;height:16px;border-radius:50%;background:var(--gold);color:#140f05;font-size:10.5px;font-weight:700}
+.why[aria-expanded="true"]{border-color:var(--gold)}
+.whybody{font-size:13.5px;color:#ddd2bd;background:rgba(227,185,100,.07);border-radius:10px;padding:10px 12px;margin-top:8px}
+details.versions{margin-top:12px;font-size:13px;background:rgba(227,185,100,.07);border-left:2px solid var(--gold);border-radius:0 8px 8px 0;padding:8px 10px}
+details.versions summary{cursor:pointer;color:var(--gold);font-weight:600;font-size:12px;letter-spacing:.06em}
+details.versions p{margin:6px 0 0;color:#ddd2bd}
+/* cover */
+.cover .card,.ch-end .card{background:transparent;border:0;backdrop-filter:none;-webkit-backdrop-filter:none;padding:0;max-width:600px}
+.cover h1{font-family:'Cormorant Garamond',serif;font-weight:500;font-size:84px;line-height:.95;margin:4px 0 6px}
+.cover h1 .deva{font-family:'Tiro Devanagari Sanskrit',serif;font-size:30px;color:var(--gold);display:block;margin-top:8px}
+.cover .lead{font-size:25px;color:#f3e8d2;max-width:480px}
+.meta{font-size:12.5px;color:var(--muted);margin-top:14px;display:flex;flex-wrap:wrap;gap:6px 14px}
+.hint{margin-top:26px;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;gap:10px}
+.hint i{display:block;width:1px;height:34px;background:linear-gradient(var(--gold),transparent);animation:drip 2s infinite}
+@keyframes drip{0%{transform:scaleY(0);transform-origin:top}50%{transform:scaleY(1);transform-origin:top}51%{transform-origin:bottom}100%{transform:scaleY(0);transform-origin:bottom}}
+/* boon lists */
+ol.boon{margin:8px 0 10px;padding:0;list-style:none;counter-reset:b}
+ol.boon li{counter-increment:b;display:flex;gap:10px;font-size:14px;padding:5px 0;border-bottom:1px solid rgba(227,185,100,.1)}
+ol.boon li::before{content:counter(b);flex:none;width:20px;height:20px;border-radius:50%;border:1px solid var(--gold);color:var(--gold);font-size:11px;display:grid;place-items:center;margin-top:1px}
+ol.check li{flex-wrap:wrap;opacity:.32;transition:opacity .5s}
+ol.check li.on{opacity:1}
+ol.check li.on::before{content:'✓';background:var(--gold);color:#140f05}
+ol.check .t{flex:1 1 70%;font-weight:500}
+ol.check .how{flex:1 1 100%;padding-left:30px;color:#ddd2bd;font-size:13px}
+.tag{font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;border-radius:99px;padding:2px 7px;align-self:flex-start;white-space:nowrap}
+.tag.tx{background:rgba(227,185,100,.18);color:var(--gold)}
+.tag.rt{background:rgba(140,170,255,.16);color:#aab9ff}
+.tag.pr{background:rgba(255,255,255,.08);color:var(--muted)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 12px;font-size:11.5px;color:var(--muted);margin-top:6px}
+.tiny{font-size:12px;color:var(--muted)}
+.ghost{background:transparent;border:1px solid var(--line);border-radius:99px;padding:7px 14px;cursor:pointer;font-size:12.5px}
+.ghost:hover{border-color:var(--gold)}
+/* paywall */
+.paywall{position:relative;z-index:3;min-height:100vh;display:grid;place-items:center;padding:90px 20px;background:radial-gradient(ellipse at 50% 40%,#2a1a0c,#07060c 70%)}
+.paywall .card{max-width:520px;text-align:center;padding:30px}
+.paywall h3{font-size:40px}
+.price{display:flex;justify-content:center;gap:10px;margin:16px 0;flex-wrap:wrap}
+.price div{border:1px solid var(--line);border-radius:12px;padding:10px 16px;min-width:130px}
+.price b{display:block;font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:600}
+.price small{color:var(--muted)}
+.cta{display:inline-block;background:var(--gold);color:#160f04;border:0;border-radius:99px;padding:11px 20px;font-weight:600;cursor:pointer;text-decoration:none}
+.cta[disabled]{opacity:.7;cursor:default}
+.ctas{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:8px}
+body.locked .members{display:none}
+body:not(.locked) .paywall{display:none}
+/* epilogue */
+.threads{display:grid;gap:8px;margin-top:12px}
+.thr{display:block;text-decoration:none;border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:rgba(255,255,255,.03);transition:.2s}
+a.thr:hover{border-color:var(--gold);background:rgba(255,255,255,.07)}
+.thr b{font-family:'Cormorant Garamond',serif;font-size:19px;font-weight:600;display:block;line-height:1.2}
+.thr span{font-size:12.5px;color:#d6cbb5}
+.thr em{font-style:normal;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);float:right;margin-left:8px}
+.thr.soon{opacity:.6}
+.thr.soon em::after{content:' · soon';color:var(--muted)}
+/* chapter dots */
+nav.dots{position:fixed;right:12px;top:50%;transform:translateY(-50%);z-index:15;display:flex;flex-direction:column}
+.dots button{width:24px;height:22px;background:none;border:0;position:relative;cursor:pointer;padding:0}
+.dots button::before{content:'';position:absolute;left:50%;top:50%;width:5px;height:5px;margin:-2.5px;border-radius:50%;background:rgba(239,231,214,.35);transition:.3s}
+.dots button.on::before{background:var(--gold);width:9px;height:9px;margin:-4.5px;box-shadow:0 0 10px var(--gold)}
+.dots button.lock::before{background:none;border:1px solid rgba(239,231,214,.4)}
+.dots button span{position:absolute;right:28px;top:50%;transform:translateY(-50%);font-size:11px;white-space:nowrap;opacity:0;transition:.3s;pointer-events:none;text-shadow:0 0 6px #000}
+.dots button.on span,.dots button:hover span,.dots button:focus-visible span{opacity:1}
+/* popover */
+.pop{position:fixed;z-index:60;width:300px;max-width:calc(100vw - 32px);background:#120e18;border:1px solid var(--gold);border-radius:14px;padding:14px 16px;box-shadow:0 12px 40px rgba(0,0,0,.6);display:none}
+.pop.show{display:block}
+.pop h4{margin:0;font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:600;line-height:1.1}
+.pop .deva{font-family:'Tiro Devanagari Sanskrit',serif;color:var(--gold);font-size:17px;margin-left:6px}
+.pop p{margin:6px 0 0;font-size:13.5px;color:#ddd2bd}
+.pop .ps{font-size:11.5px;color:var(--muted);margin-top:8px}
+.pop a{display:inline-block;margin-top:8px;font-size:12.5px;color:var(--gold)}
+.pop .x{position:absolute;top:8px;right:10px;background:none;border:0;cursor:pointer;font-size:18px;color:var(--muted)}
+/* svg animation helpers */
+.flick{transform-box:fill-box;transform-origin:50% 100%;animation:flick .45s ease-in-out infinite alternate}
+@keyframes flick{from{transform:scaleY(.85) skewX(-3deg)}to{transform:scaleY(1.08) skewX(3deg)}}
+.tw{animation:tw 3s ease-in-out infinite alternate}
+@keyframes tw{from{opacity:.15}to{opacity:1}}
+.slither{animation:sl 1.6s ease-in-out infinite alternate}
+@keyframes sl{from{transform:translateX(-10px)}to{transform:translateX(10px)}}
+/* read mode */
+body.read .stage,body.read #fx,body.read nav.dots{display:none}
+body.read .beats{margin-top:0}
+body.read .beat,body.read .beat:last-child{min-height:0;padding:22px 24px;justify-content:center}
+body.read .chapter:first-of-type .beat:first-child{padding-top:100px}
+body.read .card{max-width:680px;width:100%}
+body.read .hint{display:none}
+body.read ol.check li{opacity:1}
+body.read .paywall{min-height:0}
+@media (prefers-reduced-motion: reduce){.flick,.tw,.slither,.hint i{animation:none}}
+@media (max-width:760px){
+  .beat{align-items:flex-end;padding:80px 16px 40px}
+  .card{max-width:none;width:100%;padding:18px}
+  h3{font-size:29px}
+  .cover h1{font-size:60px}
+  .cover .lead{font-size:21px}
+  .cover .card{background:linear-gradient(rgba(7,6,12,0),rgba(7,6,12,.8) 22%);padding:16px 0}
+  .stage::after{background:linear-gradient(transparent 35%,rgba(5,4,9,.55)),radial-gradient(ellipse at 50% 40%,transparent 50%,rgba(0,0,0,.4))}
+  nav.dots{display:none}
+  .htitle span{display:none}
+}
+</style>
+</head>
+<body class="locked">
+<div class="progress" id="progress"></div>
+<canvas id="fx" aria-hidden="true"></canvas>
+<header>
+  <div class="hl"><a class="back" href="index.html#s-bharata">← Cosmos</a><div class="htitle">Narasimha<span>A LOKA SAGA · PROTOTYPE</span></div></div>
+  <button id="readBtn" class="hbtn" aria-pressed="false">Read mode</button>
+</header>
+<nav class="dots" id="dots" aria-label="Chapters"></nav>
+<div class="pop" id="pop" role="dialog" aria-modal="false"><button class="x" aria-label="Close">×</button><div id="popBody"></div></div>
+
+<main>
+<!-- PROLOGUE -->
+<section class="chapter" id="c0" data-scene="gate" data-name="Prologue · The Gate">
+  <div class="stage" aria-hidden="true"></div>
+  <div class="beats">
+    <div class="beat cover"><div class="card">
+      <div class="kicker">A Loka saga · Satya yuga</div>
+      <h1>Narasimha<span class="deva" lang="sa">नृसिंह</span></h1>
+      <p class="lead">A boon with no way out, and the god who kept every word of it.</p>
+      <div class="meta"><span>Prologue + 7 chapters</span><span>About 12 minutes</span><span>From the Bhagavata Purana, book 7</span></div>
+      <div class="hint"><i></i>Scroll to begin</div>
+    </div></div>
+    <div class="beat"><div class="card">
+      <div class="kicker">Prologue · Vaikuntha</div>
+      <h3>The Gate</h3>
+      <p>Before there was a demon king, there were two doorkeepers. <button class="nm" data-k="jaya">Jaya</button> and <button class="nm" data-k="vijaya">Vijaya</button> guarded the seventh gate of <button class="nm" data-k="vaikuntha">Vaikuntha</button>, Vishnu’s own world, which lies beyond all fourteen worlds of the cosmic egg.</p>
+    </div></div>
+    <div class="beat"><div class="card">
+      <p>One day four travelers came up the road: the <button class="nm" data-k="kumaras">Kumaras</button>. They were sages older than most of creation, but they looked like small boys, and they had already walked through six gates without anyone stopping them.</p>
+      <p>The doorkeepers saw children. They crossed their maces and barred the way.</p>
+    </div></div>
+    <div class="beat"><div class="card">
+      <p>The sages didn’t argue. They cursed. The guards had acted out of pride in a world where pride has no place, so they would be born where it does: among the asuras.</p>
+      <p>Vishnu came to the gate himself. He didn’t undo the curse. He told the two that it would end, and that they would come home.</p>
+      <details class="versions"><summary>Versions</summary><p>Many retellings add a choice: seven births as Vishnu’s devotees, or three as his enemies. The doorkeepers chose three, to come home sooner. The Bhagavata doesn’t include the choice. Narada says only that three births as Vishnu’s enemies, always thinking of him, brought them back.</p></details>
+      <p class="src">Bhagavata Purana 3.15–3.16, 7.1</p>
+    </div></div>
+  </div>
+</section>
+
+<!-- 1 -->
+<section class="chapter" id="c1" data-scene="vow" data-name="1 · The Vow">
+  <div class="stage" aria-hidden="true"></div>
+  <div class="beats">
+    <div class="beat"><div class="card">
+      <div class="kicker">Chapter 1 · The asura capital</div>
+      <h3>The Vow</h3>
+      <p>Their first birth was as twin sons of <button class="nm" data-k="diti">Diti</button>: <button class="nm" data-k="hiranyaksha">Hiranyaksha</button> and <button class="nm" data-k="hiranyakashipu">Hiranyakashipu</button>.</p>
+      <p>Hiranyaksha went looking for a fight with Vishnu, and found one. Vishnu, as <button class="nm" data-k="varaha">Varaha</button> the boar, killed him.</p>
+    </div></div>
+    <div class="beat"><div class="card">
+      <p>Hiranyakashipu took the news like a wound. He bit his lip until it bled, raised his trident, and gave his orders: wherever people worshipped Vishnu, tear it down.</p>
+    </div></div>
+    <div class="beat"><div class="card">
+      <p>Then he turned to his grieving mother and spoke to her gently about death. Bodies come and go, he told her. The self inside them is never born and never dies.</p>
+      <button class="why" aria-expanded="false">Why does an asura sound like a sage?</button>
+      <div class="whybody" hidden>The Bhagavata gives Hiranyakashipu a long speech on the nature of the self, and it is good philosophy. He knows the teaching. He just won’t apply it to his own grief. That gap between what he knows and what he does drives the whole story.</div>
+    </div></div>
+    <div class="beat"><div class="card">
+      <p>But alone, he decided something else. Vishnu had taken his brother. So he would make himself into someone nobody could take: not old age, not death, not even Vishnu.</p>
+      <p class="src">Bhagavata Purana 3.17–3.19, 7.2, 7.3.1</p>
+    </div></div>
+  </div>
+</section>
+
+<!-- 2 -->
+<section class="chapter" id="c2" data-scene="mandara" data-name="2 · The Anthill">
+  <div class="stage" aria-hidden="true"></div>
+  <div class="beats">
+    <div class="beat"><div class="card">
+      <div class="kicker">Chapter 2 · The valley of Mount Mandara</div>
+      <h3>The Anthill</h3>
+      <p>He went to a valley at the foot of <button class="nm" data-k="mandara">Mount Mandara</button>. He rose onto the tips of his toes, lifted his arms, fixed his eyes on the sky, and stayed there.</p>
+    </div></div>
+    <div class="beat"><div class="card">
+      <p>Smoke began to rise from his head, and its heat spread through the worlds. Rivers churned, the earth shook, stars fell. In heaven, the gods couldn’t bear it. They went to <button class="nm" data-k="brahma">Brahma</button> to complain.</p>
+    </div></div>
+    <div class="beat"><div class="card">
+      <p>Down in the valley, termites built their mound over him. Grass grew on the mound, and bamboo pushed up through it. Ants ate his flesh.</p>
+      <p>Underneath, he kept going.</p>
+    </div></div>
+    <div class="beat"><div class="card">
+      <p>At last Brahma came, riding his swan. He could barely find the man. He sprinkled water from his pot over the anthill, and Hiranyakashipu stood up out of it whole: young, strong, his body shining like molten gold.</p>
+    </div></div>
+    <div class="beat"><div class="card">
+      <p>Then he asked. He didn’t simply ask never to die. He asked for something more careful: to close, one by one, every door death could come through.</p>
+      <ol class="boon">
+        <li>Not by any being Brahma created</li>
+        <li>Not inside a dwelling, and not outside it</li>
+        <li>Not by day, and not by night</li>
+        <li>Not on the ground, and not in the sky</li>
+        <li>Not by any weapon</li>
+        <li>Not by human, and not by animal</li>
+        <li>Not by anything living or non-living</li>
+        <li>Not by god, demon or great serpent</li>
+      </ol>
+      <p class="tiny">He also asked for no rival in battle, rule over all beings, and the powers of yoga. Paraphrased from Bhagavata 7.3.35–7.3.38.</p>
+      <p>Brahma granted all of it.</p>
+      <button class="why" aria-expanded="false">Why would Brahma agree?</button>
+      <div class="whybody" hidden>In these stories, austerity works almost like a law. Do enough of it and the gods are bound to answer, whoever is asking. Brahma grants boons to devas and asuras alike, which is why so many of these stories turn on finding the gap in a boon.</div>
+      <p class="src">Bhagavata Purana 7.3, 7.4.1–7.4.3</p>
+    </div></div>
+  </div>
+</section>
+
+<!-- 3 -->
+<section class="chapter" id="c3" data-scene="conquest" data-name="3 · Three Worlds">
+  <div class="stage" aria-hidden="true"></div>
+  <div class="beats">
+    <div class="beat"><div class="card">
+      <div class="kicker">Chapter 3 · Svarga</div>
+      <h3>Three Worlds</h3>
+      <p>With the boon in hand, he took everything: the three worlds, the gods, the guardians of every direction. He moved into <button class="nm" data-k="indra">Indra</button>’s palace in heaven and sat on Indra’s throne, and nearly every god had to bow to him.</p>
+    </div></div>
+    <div class="beat"><div class="card">
+      <p>It went on for a long time. The gods hid, and prayed to Vishnu, and an answer came: a voice with no body.</p>
+      <p><em>Wait,</em> it said. <em>When he turns on his own son, a gentle child who hates no one, I will end him, boon or no boon.</em></p>
+    </div></div>
+    <div class="beat"><div class="card">
+      <p>That son was <button class="nm" data-k="prahlada">Prahlada</button>. He was kind to everyone, the Bhagavata says, and free of pride, though he was a prince. He was often somewhere else entirely: laughing, crying or singing to himself, lost in thinking about Vishnu.</p>
+      <p class="src">Bhagavata Purana 7.4</p>
+    </div></div>
+  </div>
+</section>
+
+<!-- 4 -->
+<section class="chapter" id="c4" data-scene="school" data-name="4 · The Trials">
+  <div class="stage" aria-hidden="true"></div>
+  <div class="beats">
+    <div class="beat"><div class="card">
+      <div class="kicker">Chapter 4 · The palace school</div>
+      <h3>The Boy Who Wouldn’t Learn</h3>
+      <p>Prahlada’s teachers were Shanda and Amarka, sons of <button class="nm" data-k="shukra">Shukracharya</button>, the asuras’ own guru. They taught him statecraft: how to tell a friend from an enemy, when to bribe and when to punish. He listened politely, and learned something else.</p>
+    </div></div>
+    <div class="beat"><div class="card">
+      <p>One day his father pulled him onto his lap and asked him for the best thing he had learned.</p>
+      <p>Prahlada told him the truth: to hear about Vishnu, to sing about him, to remember him, to serve him.</p>
+    </div></div>
+    <div class="beat"><div class="card">
+      <p>Hiranyakashipu threw the boy off his lap and ordered him killed.</p>
+    </div></div>
+    <div class="beat"><div class="card">
+      <p>They tried. They stabbed him with tridents. They set elephants and serpents on him, poisoned his food, starved him, left him in the cold, put him in fire and in water, and threw him off a mountain. Sorcerers worked spells on him.</p>
+      <p>None of it touched him.</p>
+      <button class="why" aria-expanded="false">How did that father get this son?</button>
+      <div class="whybody" hidden>While Hiranyakashipu stood in the anthill, Indra raided the asura capital and carried off his pregnant queen, <button class="nm" data-k="kayadhu">Kayadhu</button>. <button class="nm" data-k="narada">Narada</button> stopped him, and sheltered her in his hermitage. The child in her womb heard everything Narada taught. Prahlada tells this story himself, later, to his classmates (Bhagavata 7.7).</div>
+      <details class="versions"><summary>Versions</summary>
+        <p>The Vishnu Purana (1.17–1.20) spends much longer on these trials, including Prahlada being bound and thrown into the sea.</p>
+        <p>The trial most people know is <button class="nm" data-k="holika">Holika</button>: Hiranyakashipu’s sister, who could not be burned, sat in a fire with Prahlada in her lap, and the fire burned her instead. The Bhagavata doesn’t tell it. It comes from later tradition, and it’s why Holi begins with a bonfire.</p>
+      </details>
+      <p class="src">Bhagavata Purana 7.5, 7.7 · Vishnu Purana 1.17–1.20</p>
+    </div></div>
+  </div>
+</section>
+
+<!-- PAYWALL -->
+<section class="paywall" id="paywall">
+  <div class="card">
+    <div class="kicker">Free preview ends here</div>
+    <h3>The pillar is next.</h3>
+    <p>Chapters 5–7 and the epilogue are for members. Membership opens every saga and every thread across the cosmos, with a new saga each month.</p>
+    <div class="price"><div><b>$6.99</b><small>per month</small></div><div><b>$49</b><small>per year · founding price</small></div></div>
+    <div class="ctas"><button class="cta" disabled>Become a founding member</button><button class="ghost" id="unlock">Preview as a member</button></div>
+    <p class="tiny" style="margin-top:14px">Prototype: no payment is taken. “Preview as a member” just unlocks the rest.</p>
+  </div>
+</section>
+
+<!-- 5 -->
+<section class="chapter members" id="c5" data-scene="pillar" data-name="5 · The Pillar">
+  <div class="stage" aria-hidden="true"></div>
+  <div class="beats">
+    <div class="beat"><div class="card">
+      <div class="kicker">Chapter 5 · The great hall</div>
+      <h3>The Pillar</h3>
+      <p>In the end Hiranyakashipu stopped sending other people. He called Prahlada into the great hall and asked him himself. Where does a child get strength like this? Who is protecting you?</p>
+    </div></div>
+    <div class="beat"><div class="card">
+      <p>“The same one who gives you your strength,” said Prahlada. “And everyone else theirs.”</p>
+    </div></div>
+    <div class="beat"><div class="card">
+      <p>“Everywhere, is he? Then is he in this pillar?”</p>
+      <p>“He is,” said the boy.</p>
+    </div></div>
+    <div class="beat"><div class="card">
+      <p>Hiranyakashipu leapt from his throne, sword in hand, and struck the pillar with his fist.</p>
+      <p>A sound came out of it that seemed to split the shell of the universe. Far above, in his own world, Brahma heard it and thought the end had come.</p>
+    </div></div>
+    <div class="beat"><div class="card">
+      <p class="lead">And out of the pillar stepped a form that was neither man nor lion.</p>
+      <p class="src">Bhagavata Purana 7.8.1–7.8.22</p>
+    </div></div>
+  </div>
+</section>
+
+<!-- 6 -->
+<section class="chapter members" id="c6" data-scene="threshold" data-name="6 · The Threshold">
+  <div class="stage" aria-hidden="true"></div>
+  <div class="beats">
+    <div class="beat"><div class="card">
+      <div class="kicker">Chapter 6 · The doorway, at dusk</div>
+      <h3>The Threshold</h3>
+      <p>Hiranyakashipu fought, and for a while it looked like a fight. <button class="nm" data-k="narasimha">Narasimha</button> caught him, let him slip, and caught him again, the way a predator plays with its prey.</p>
+    </div></div>
+    <div class="beat"><div class="card">
+      <p>Then he carried him to the doorway of the hall, laid him across his own thighs, and tore him open with his nails.</p>
+      <details class="versions"><summary>Versions</summary><p>Most retellings set this moment at twilight. The Bhagavata’s verse names the doorway, the lap and the nails. The hour comes from commentaries and later tellings.</p></details>
+    </div></div>
+    <div class="beat"><div class="card" id="checkCard">
+      <div class="kicker">The boon, term by term</div>
+      <h3 style="font-size:28px">Every word, kept</h3>
+      <ol class="boon check" id="check">
+        <li><span class="t">Not by any being Brahma created</span><span class="tag tx">Bhagavata 7.8</span><span class="how">Narasimha wasn’t created. He came out of a pillar.</span></li>
+        <li><span class="t">Not inside, not outside</span><span class="tag tx">Bhagavata 7.8.29</span><span class="how">In the doorway of the hall.</span></li>
+        <li><span class="t">Not by day, not by night</span><span class="tag rt">Retellings</span><span class="how">At dusk, between the two.</span></li>
+        <li><span class="t">Not on the ground, not in the sky</span><span class="tag tx">Bhagavata 7.8.29</span><span class="how">Across Narasimha’s lap.</span></li>
+        <li><span class="t">Not by any weapon</span><span class="tag tx">Bhagavata 7.8.29</span><span class="how">With nails.</span></li>
+        <li><span class="t">Not by human, not by animal</span><span class="tag tx">Bhagavata 7.8</span><span class="how">Neither: a man-lion.</span></li>
+        <li><span class="t">Not by anything living or non-living</span><span class="tag pr">Popular reading</span><span class="how">Nails, often said to be neither.</span></li>
+        <li><span class="t">Not by god, demon or great serpent</span><span class="tag pr">Popular reading</span><span class="how">Vishnu himself, who is none of these.</span></li>
+      </ol>
+      <div class="legend"><span><span class="tag tx">Bhagavata</span> said in the text</span><span><span class="tag rt">Retellings</span> later tellings</span><span><span class="tag pr">Popular reading</span> how people explain it</span></div>
+      <p style="margin-top:12px"><button class="ghost" id="showAll">Show all eight</button></p>
+      <p class="src">Bhagavata Purana 7.3.35–7.3.38, 7.8.17–7.8.30</p>
+    </div></div>
+  </div>
+</section>
+
+<!-- 7 -->
+<section class="chapter members" id="c7" data-scene="calm" data-name="7 · The Child and the Lion">
+  <div class="stage" aria-hidden="true"></div>
+  <div class="beats">
+    <div class="beat"><div class="card">
+      <div class="kicker">Chapter 7 · After</div>
+      <h3>The Child and the Lion</h3>
+      <p>It wasn’t over. Narasimha sat on the dead king’s throne, still blazing, and nobody dared come near. Brahma, Shiva and the gods praised him from a distance. Even <button class="nm" data-k="lakshmi">Lakshmi</button>, the Bhagavata says, had never seen this form, and would not approach.</p>
+    </div></div>
+    <div class="beat"><div class="card">
+      <p>So Brahma sent the one person who wasn’t afraid. Prahlada walked up, small, and bowed.</p>
+      <p>Narasimha put his hand on the boy’s head, and the anger went out of him.</p>
+    </div></div>
+    <div class="beat"><div class="card">
+      <p>Offered any boon he wanted, Prahlada said that someone who serves for rewards is a merchant, not a servant. Then he asked for one thing anyway: that his father be forgiven.</p>
+    </div></div>
+    <div class="beat"><div class="card">
+      <p>His father was already purified, Narasimha told him, and twenty-one generations of the family with him.</p>
+      <p>Prahlada became king. And far away, two doorkeepers were one birth closer to home.</p>
+      <p class="src">Bhagavata Purana 7.8.31–7.10.24</p>
+    </div></div>
+  </div>
+</section>
+
+<!-- EPILOGUE -->
+<section class="chapter members" id="c8" data-scene="thread" data-name="Where this thread leads">
+  <div class="stage" aria-hidden="true"></div>
+  <div class="beats">
+    <div class="beat"><div class="card">
+      <div class="kicker">Epilogue</div>
+      <h3>Where this thread leads</h3>
+      <p>Every story here is a knot in a larger net. Pull one, and the others move.</p>
+      <div class="threads">
+        <div class="thr soon"><em>Treta yuga</em><b>Ravana and Kumbhakarna</b><span>Jaya and Vijaya’s second birth, in the Ramayana.</span></div>
+        <div class="thr soon"><em>Dvapara yuga</em><b>Shishupala and Dantavakra</b><span>Their third and last, opposite Krishna.</span></div>
+        <a class="thr" href="index.html#s-talatala"><em>Bhagavata 7.10</em><b>Maya and the burning of Tripura</b><span>The next story Narada tells. Maya’s realm is in Talatala.</span></a>
+        <div class="thr soon"><em>Bhagavata 3.17–3.19</em><b>Varaha and Hiranyaksha</b><span>The brother’s story, and the drowned earth.</span></div>
+        <div class="thr soon"><em>Later tradition</em><b>Holika and Holi</b><span>The bonfire on the eve of Holi.</span></div>
+      </div>
+      <p style="margin-top:16px"><a class="cta" href="index.html">Back to the cosmos</a></p>
+    </div></div>
+  </div>
+</section>
+</main>
+
+<script>
+/* ================================================================== */
+/* Glossary                                                           */
+/* ================================================================== */
+const W={
+  jaya:['Jaya','जय','One of the two doorkeepers of Vaikuntha, cursed by the Kumaras to be born among the asuras.','Bhagavata 3.15–3.16'],
+  vijaya:['Vijaya','विजय','Jaya’s fellow doorkeeper, cursed alongside him.','Bhagavata 3.15–3.16'],
+  vaikuntha:['Vaikuntha','वैकुण्ठ','Vishnu’s own world, beyond the fourteen worlds of the cosmic egg.','Bhagavata 3.15'],
+  kumaras:['The Kumaras','सनकादि','Sanaka, Sanandana, Sanatana and Sanatkumara: mind-born sons of Brahma who chose to stay children forever.','Bhagavata 3.12, 3.15','index.html#s-jana','They live in Janaloka'],
+  diti:['Diti','दिति','Mother of the twins, and of the Daityas, the asuras named after her.','Bhagavata 3.14'],
+  hiranyaksha:['Hiranyaksha','हिरण्याक्ष','Hiranyakashipu’s twin. He challenged Vishnu and was killed by Varaha.','Bhagavata 3.17–3.19'],
+  hiranyakashipu:['Hiranyakashipu','हिरण्यकशिपु','Jaya’s first birth: the asura king whose boon seemed to close every door to death.','Bhagavata 7.2–7.8'],
+  varaha:['Varaha','वराह','Vishnu as a boar, the third avatar, who raised the earth from the cosmic waters.','Bhagavata 3.13, 3.18'],
+  brahma:['Brahma','ब्रह्मा','The creator. He answers austerity with boons, for gods and asuras alike.','Bhagavata 7.3','index.html#s-satya','He lives in Satyaloka'],
+  mandara:['Mount Mandara','मन्दर','Where Hiranyakashipu did his austerities. In another story it becomes the churning rod for the ocean of milk.','Bhagavata 7.3.2, 8.6'],
+  prahlada:['Prahlada','प्रह्लाद','Son of Hiranyakashipu and Kayadhu, devoted to Vishnu since before he was born.','Bhagavata 7.4–7.10'],
+  kayadhu:['Kayadhu','कयाधु','Hiranyakashipu’s queen and Prahlada’s mother. Narada sheltered her while she was pregnant.','Bhagavata 7.7'],
+  narada:['Narada','नारद','The wandering sage who turns up at the turning points of nearly every story. He tells this one to Yudhishthira.','Bhagavata 7.1, 7.7'],
+  shukra:['Shukracharya','शुक्राचार्य','Guru of the asuras. His sons Shanda and Amarka taught Prahlada.','Bhagavata 7.5'],
+  indra:['Indra','इन्द्र','King of the devas, who rules Svarga, until someone takes it from him.','Bhagavata 7.4','index.html#s-svar','He rules Svarloka'],
+  narasimha:['Narasimha','नृसिंह','Vishnu’s fourth avatar: neither man nor lion.','Bhagavata 7.8–7.10'],
+  lakshmi:['Lakshmi','लक्ष्मी','Goddess of fortune, and Vishnu’s consort.','Bhagavata 7.9.2'],
+  holika:['Holika','होलिका','In later tradition, Hiranyakashipu’s sister, who tried to burn Prahlada and burned herself.','Later tradition, not in the Bhagavata'],
+};
+const pop=document.getElementById('pop'), popBody=document.getElementById('popBody');
+function openPop(btn){
+  const w=W[btn.dataset.k]; if(!w) return;
+  popBody.innerHTML=`<h4>${w[0]}<span class="deva" lang="sa">${w[1]}</span></h4><p>${w[2]}</p><div class="ps">${w[3]}</div>${w[4]?`<a href="${w[4]}">${w[5]} →</a>`:''}`;
+  pop.classList.add('show');
+  const r=btn.getBoundingClientRect(), pw=pop.offsetWidth, ph=pop.offsetHeight;
+  let x=Math.min(Math.max(16,r.left),innerWidth-pw-16), y=r.bottom+8; if(y+ph>innerHeight-12) y=r.top-ph-8;
+  pop.style.left=x+'px'; pop.style.top=Math.max(64,y)+'px';
+  pop.querySelector('.x').focus({preventScroll:true});
+}
+document.addEventListener('click',e=>{
+  const n=e.target.closest('.nm'); if(n){ e.stopPropagation(); openPop(n); return; }
+  if(e.target.closest('.pop .x') || !e.target.closest('.pop')) pop.classList.remove('show');
+  const w=e.target.closest('.why'); if(w){ const b=w.nextElementSibling; const open=b.hidden; b.hidden=!open; w.setAttribute('aria-expanded',open); }
+});
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') pop.classList.remove('show'); });
+addEventListener('scroll',()=>pop.classList.remove('show'),{passive:true});
+
+/* ================================================================== */
+/* Read mode, paywall, chapter dots                                   */
+/* ================================================================== */
+const readBtn=document.getElementById('readBtn');
+function setRead(on){ document.body.classList.toggle('read',on); readBtn.setAttribute('aria-pressed',on); try{localStorage.setItem('loka-read',on?'1':'0')}catch(e){} }
+readBtn.addEventListener('click',()=>setRead(!document.body.classList.contains('read')));
+try{ if(localStorage.getItem('loka-read')==='1') setRead(true); }catch(e){}
+document.getElementById('unlock').addEventListener('click',()=>{ document.body.classList.remove('locked'); buildDots(); document.getElementById('c5').scrollIntoView(); });
+let forceAll=false; document.getElementById('showAll').addEventListener('click',()=>{forceAll=true;});
+
+const chapters=[...document.querySelectorAll('.chapter')];
+const dotsEl=document.getElementById('dots'); let dots=[];
+function buildDots(){
+  dotsEl.innerHTML=''; dots=chapters.map(c=>{ const b=document.createElement('button'); const locked=document.body.classList.contains('locked')&&c.classList.contains('members');
+    b.innerHTML=`<span>${c.dataset.name}${locked?' · members':''}</span>`; b.setAttribute('aria-label',c.dataset.name); if(locked) b.classList.add('lock');
+    b.addEventListener('click',()=>{ if(locked){ document.getElementById('paywall').scrollIntoView({behavior:'smooth'}); } else c.scrollIntoView({behavior:'smooth'}); });
+    dotsEl.appendChild(b); return b; });
+}
+buildDots();
+
+/* ================================================================== */
+/* SVG helpers                                                        */
+/* ================================================================== */
+const NS='http://www.w3.org/2000/svg';
+function E(tag,a={},p){ const e=document.createElementNS(NS,tag); for(const k in a) e.setAttribute(k,a[k]); if(p) p.appendChild(e); return e; }
+const cl=(x,a=0,b=1)=>Math.min(b,Math.max(a,x));
+const sm=(a,b,x)=>{ const t=cl((x-a)/(b-a)); return t*t*(3-2*t); };
+const bump=(a,b,c,d,x)=>sm(a,b,x)*(1-sm(c,d,x));
+const lerp=(a,b,t)=>a+(b-a)*t;
+function RNG(seed){ let a=seed>>>0; return ()=>{ a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
+function grad(defs,id,stops,type='linear',vertical=true){
+  const g=type==='linear'?E('linearGradient',{id,x1:0,y1:0,x2:vertical?0:1,y2:vertical?1:0},defs):E('radialGradient',{id},defs);
+  stops.forEach(s=>E('stop',{offset:s[0],'stop-color':s[1],'stop-opacity':s[2]??1},g)); return `url(#${id})`;
+}
+function sky(g,fill){ return E('rect',{x:-800,y:-300,width:3200,height:1500,fill},g); }
+function ridge(g,rand,y0,amp,fill,freq=1){
+  const ph=[rand()*6,rand()*6,rand()*6]; let d=`M-700 1200 L-700 ${y0}`;
+  for(let x=-700;x<=2300;x+=30){ const n=Math.sin(x*.0021*freq+ph[0])*.5+Math.sin(x*.0057*freq+ph[1])*.3+Math.sin(x*.013*freq+ph[2])*.2; d+=` L${x} ${(y0-amp*(n*.5+.5)).toFixed(1)}`; }
+  return E('path',{d:d+' L2300 1200 Z',fill},g);
+}
+function clouds(g,rand,n,x0,x1,y0,y1,fill,op,s=1){
+  for(let i=0;i<n;i++){ const cx=lerp(x0,x1,rand()), cy=lerp(y0,y1,rand()), w=(120+rand()*220)*s; const c=E('g',{opacity:op*(.6+.4*rand())},g);
+    for(let k=0;k<5;k++) E('ellipse',{cx:cx+(k-2)*w*.28+rand()*20,cy:cy-rand()*w*.12,rx:w*(.22+rand()*.16),ry:w*(.12+rand()*.08),fill},c); }
+}
+function starsField(g,rand,n,yMax,fill='#fff'){ for(let i=0;i<n;i++){ const c=E('circle',{cx:-600+rand()*2800,cy:-200+rand()*(yMax+200),r:(.6+rand()*1.6).toFixed(2),fill,class:'tw'},g); c.style.animationDelay=(rand()*3).toFixed(2)+'s'; c.style.animationDuration=(2+rand()*3).toFixed(2)+'s'; } }
+function flame(x,y,h,w){ return `M${x-w} ${y} C${x-w} ${y-h*.45} ${x-w*.25} ${y-h*.62} ${x} ${y-h} C${x+w*.25} ${y-h*.62} ${x+w} ${y-h*.45} ${x+w} ${y} Z`; }
+function fire(g,x,y,s,fill,n=5,rand=Math.random){ const f=E('g',{},g); for(let i=0;i<n;i++){ const p=E('path',{d:flame(x+(i-(n-1)/2)*26*s,y,(110+rand()*90)*s,(22+rand()*14)*s),fill,class:'flick',opacity:.9},f); p.style.animationDelay=(rand()*.5).toFixed(2)+'s'; p.style.animationDuration=(.35+rand()*.3).toFixed(2)+'s'; } return f; }
+// a human silhouette, feet at (x,y), about 190 units tall at s=1
+function figure(parent,o){
+  const {x,y,s=1,fill='#000',crown=false,weapon=null,arms='down',flip=false,child=false}=o;
+  const g=E('g',{transform:`translate(${x} ${y}) scale(${flip?-s:s} ${s})`,fill},parent);
+  E('circle',{cx:0,cy:child?-136:-152,r:child?15:13},g);
+  if(crown) E('path',{d:'M-12 -162 L-15 -184 L-6 -171 L0 -190 L6 -171 L15 -184 L12 -162 Z'},g);
+  if(child){
+    E('path',{d:'M-11 -122 L11 -122 L20 -110 L17 -62 L-17 -62 L-20 -110 Z'},g);
+    E('path',{d:'M-17 -64 L17 -64 L22 -6 L6 -6 L2 -40 L-2 -40 L-6 -6 L-22 -6 Z M-22 -6 L-5 -6 L-5 0 L-25 0 Z M22 -6 L5 -6 L5 0 L25 0 Z'},g);
+    E('path',{d:'M-19 -112 L-29 -70 L-22 -68 L-12 -106 Z M19 -112 L29 -70 L22 -68 L12 -106 Z'},g);
+    return {g,ra:g};
+  }
+  E('path',{d:'M-9 -140 L9 -140 L22 -128 L19 -74 L-19 -74 L-22 -128 Z'},g);
+  E('path',{d:'M-20 -76 L20 -76 L27 -8 L9 -8 L3 -50 L-3 -50 L-9 -8 L-27 -8 Z M-27 -8 L-6 -8 L-6 0 L-30 0 Z M27 -8 L6 -8 L6 0 L30 0 Z'},g);
+  E('path',{d:arms==='up'?'M-16 -132 L-36 -208 L-27 -211 L-8 -136 Z':'M-20 -128 L-32 -76 L-24 -74 L-13 -122 Z'},g);
+  const ra=E('g',{},g);
+  E('path',{d:arms==='up'?'M16 -132 L36 -208 L27 -211 L8 -136 Z':'M20 -128 L32 -76 L24 -74 L13 -122 Z'},ra);
+  if(weapon==='mace'){ E('rect',{x:26,y:-150,width:5,height:150},ra); E('circle',{cx:28.5,cy:-156,r:12},ra); }
+  if(weapon==='trident'){ E('rect',{x:27,y:-232,width:4,height:240},ra); E('path',{d:'M15 -254 L18 -228 L40 -228 L43 -254 L36 -234 L29 -262 L22 -234 Z'},ra); }
+  if(weapon==='sword'){ E('path',{d:'M27 -80 L31 -80 L33 -196 L29 -208 L25 -196 Z'},ra); E('rect',{x:18,y:-84,width:22,height:5},ra); }
+  return {g,ra};
+}
+function narasimha(parent,{x,y,s=1,fill='#0c0605',eye='#ffd56b',gold='#d9a441'}){
+  const g=E('g',{transform:`translate(${x} ${y}) scale(${s})`},parent);
+  const hy=-262;
+  // body: broad shoulders, tapering waist
+  E('path',{d:'M-136 -176 Q-70 -214 0 -210 Q70 -214 136 -176 Q128 -110 96 -46 Q0 -30 -96 -46 Q-128 -110 -136 -176 Z',fill},g);
+  E('path',{d:'M-100 -50 Q0 -34 100 -50 L132 0 L-132 0 Z',fill},g);
+  E('path',{d:'M-132 -172 Q-170 -130 -184 -84 L-162 -70 Q-142 -112 -104 -142 Z M132 -172 Q170 -130 184 -84 L162 -70 Q142 -112 104 -142 Z',fill},g);
+  // mane: two rings of flame-like locks
+  const lock=(len,w)=>`M${-w/2} 0 C${-w*.95} ${-len*.45} ${-w*.55} ${-len} ${w*.1} ${-len} C${w*.7} ${-len*.96} ${w*.85} ${-len*.45} ${w/2} 0 Z`;
+  [[22,70,96,40],[18,54,74,34]].forEach(([n,r0,len,w],ring)=>{ for(let i=0;i<n;i++){ const a=i/n*360+(ring?7:0);
+    E('path',{d:lock(len,w),fill,transform:`translate(0 ${hy}) rotate(${a.toFixed(1)}) translate(0 ${-r0})`},g); } });
+  E('path',{d:`M-62 ${hy} Q-70 ${hy+70} -30 ${hy+96} L0 ${hy+120} L30 ${hy+96} Q70 ${hy+70} 62 ${hy} Z`,fill},g);
+  E('ellipse',{cx:0,cy:hy,rx:56,ry:62,fill},g);
+  // crown
+  E('path',{d:`M-44 ${hy-50} L-50 ${hy-96} L-28 ${hy-84} L-18 ${hy-132} L0 ${hy-108} L18 ${hy-132} L28 ${hy-84} L50 ${hy-96} L44 ${hy-50} Z`,fill,stroke:gold,'stroke-width':3,'stroke-linejoin':'round'},g);
+  E('circle',{cx:0,cy:hy-70,r:6,fill:gold},g);
+  // jewelry picks the form out of the dark
+  E('path',{d:'M-78 -192 Q0 -118 78 -192',fill:'none',stroke:gold,'stroke-width':4},g);
+  E('path',{d:'M-60 -184 Q0 -140 60 -184',fill:'none',stroke:gold,'stroke-width':2.5,opacity:.8},g);
+  E('circle',{cx:0,cy:-150,r:8,fill:gold},g);
+  E('path',{d:'M-150 -124 L-128 -140 M150 -124 L128 -140',stroke:gold,'stroke-width':6,'stroke-linecap':'round'},g);
+  E('path',{d:'M-96 -50 Q0 -32 96 -50',fill:'none',stroke:gold,'stroke-width':3,opacity:.7},g);
+  const eyes=E('g',{fill:eye},g);
+  E('path',{d:`M-34 ${hy-10} Q-20 ${hy-20} -8 ${hy-8} Q-20 ${hy-2} -34 ${hy-10} Z M34 ${hy-10} Q20 ${hy-20} 8 ${hy-8} Q20 ${hy-2} 34 ${hy-10} Z`},eyes);
+  return {g,eyes};
+}
+function elephant(parent,x,y,s,fill){
+  const g=E('g',{transform:`translate(${x} ${y}) scale(${s})`,fill},parent);
+  E('ellipse',{cx:20,cy:-120,rx:120,ry:76},g); E('circle',{cx:-96,cy:-142,r:56},g);
+  E('path',{d:'M-138 -122 Q-180 -60 -152 0 L-134 0 Q-152 -56 -112 -100 Z'},g);
+  E('ellipse',{cx:-58,cy:-142,rx:40,ry:54,opacity:.8},g);
+  [-74,-28,48,98].forEach(lx=>E('rect',{x:lx,y:-78,width:32,height:78,rx:6},g));
+  E('path',{d:'M-130 -104 Q-152 -84 -176 -96 Q-152 -78 -126 -94 Z',fill:'#e9dcc0'},g);
+  return g;
+}
+function serpent(parent,x0,y,len,amp,fill){
+  const g=E('g',{class:'slither'},parent); let d=`M${x0} ${y}`;
+  for(let i=1;i<=40;i++){ const t=i/40; d+=` L${(x0+t*len).toFixed(1)} ${(y+Math.sin(t*Math.PI*4)*amp*(1-t*.6)).toFixed(1)}`; }
+  E('path',{d,fill:'none',stroke:fill,'stroke-width':16,'stroke-linecap':'round','stroke-linejoin':'round'},g);
+  E('ellipse',{cx:x0-6,cy:y,rx:20,ry:13,fill},g); return g;
+}
+function lotus(parent,x,y,s,fill){ const g=E('g',{transform:`translate(${x} ${y}) scale(${s})`},parent);
+  for(let i=-3;i<=3;i++) E('ellipse',{cx:0,cy:-42,rx:15,ry:44,fill,transform:`rotate(${i*23})`,opacity:.92},g);
+  E('ellipse',{cx:0,cy:0,rx:74,ry:12,fill},g); return g; }
+function column(g,x,yT,yB,w,fill,band){ E('rect',{x:x-w/2,y:yT,width:w,height:yB-yT,fill},g); E('rect',{x:x-w*.72,y:yT-w*.38,width:w*1.44,height:w*.38,fill},g); E('rect',{x:x-w*.72,y:yB,width:w*1.44,height:w*.32,fill},g);
+  if(band) for(let k=1;k<6;k++) E('rect',{x:x-w/2,y:yT+(yB-yT)*k/6,width:w,height:3,fill:band,opacity:.35},g); }
+
+/* ================================================================== */
+/* Scenes                                                             */
+/* ================================================================== */
+const fx={mode:'none',k:0,point:null};
+const SCENES={
+gate(svg,d){
+  const r=RNG(11);
+  sky(svg,grad(d,'g-sky',[[0,'#fbf0d4'],[.55,'#f0d29a'],[1,'#dca85e']]));
+  const far=E('g',{'data-d':.12},svg);
+  E('circle',{cx:950,cy:400,r:620,fill:grad(d,'g-halo',[[0,'#ffffff',1],[.3,'#fff6dc',.85],[1,'#fff6dc',0]],'radial')},far);
+  clouds(far,r,9,-200,1800,120,460,'#ffffff',.6);
+  const mid=E('g',{'data-d':.35},svg);
+  E('path',{d:'M640 1000 L905 600 L995 600 L1260 1000 Z',fill:grad(d,'g-path',[[0,'#f8e6bd'],[1,'#c99449']])},mid);
+  const glowIn=E('path',{d:'M862 600 L862 350 Q950 228 1038 350 L1038 600 Z',fill:'#ffffff',opacity:.6},mid);
+  const gold=grad(d,'g-gold',[[0,'#f7d98c'],[1,'#b9822f']]);
+  E('path',{d:'M812 612 L812 330 Q950 150 1088 330 L1088 612 L1046 612 L1046 350 Q950 214 854 350 L854 612 Z',fill:gold},mid);
+  [812,1088].forEach(x=>{ E('rect',{x:x-26,y:600,width:52,height:20,fill:'#a87430'},mid); E('circle',{cx:x,cy:300,r:12,fill:'#f7d98c'},mid); });
+  E('circle',{cx:950,cy:182,r:16,fill:'#fff0c0'},mid);
+  const vishnu=E('ellipse',{cx:950,cy:440,rx:70,ry:150,fill:grad(d,'g-v',[[0,'#ffffff',1],[.6,'#e8f0ff',.7],[1,'#e8f0ff',0]],'radial'),opacity:0},mid);
+  const guardL=figure(mid,{x:760,y:640,s:1.3,fill:'#3a2c4f',crown:true,weapon:'mace'});
+  const guardR=figure(mid,{x:1140,y:640,s:1.3,fill:'#3a2c4f',crown:true,weapon:'mace',flip:true});
+  const kids=E('g',{},mid); [-66,-22,22,66].forEach((o,i)=>figure(kids,{x:950+o,y:700+(i%2)*8,s:.62,fill:'#4d3d62',child:true}));
+  const curse=E('rect',{x:-800,y:-300,width:3200,height:1500,fill:'#5a1420',opacity:0},svg);
+  const fg=E('g',{'data-d':.9},svg); clouds(fg,r,6,-300,1900,840,980,'#fff8e6',.85,1.6);
+  return p=>{
+    { const k=sm(.1,.4,p), sc=lerp(1.9,1,k); kids.setAttribute('transform',`translate(950 ${lerp(980,700,k).toFixed(1)}) scale(${sc.toFixed(3)}) translate(-950 -700)`); }
+    const b=sm(.36,.48,p); guardL.ra.setAttribute('transform',`rotate(${(b*42).toFixed(1)} 18 -128)`); guardR.ra.setAttribute('transform',`rotate(${(b*42).toFixed(1)} 18 -128)`);
+    curse.setAttribute('opacity',(bump(.52,.6,.68,.8,p)*.5).toFixed(3));
+    const v=sm(.74,.92,p); vishnu.setAttribute('opacity',v.toFixed(3)); glowIn.setAttribute('opacity',(.6+.4*v).toFixed(3));
+    fx.mode='dust'; fx.k=1;
+  };
+},
+vow(svg,d){
+  const r=RNG(23);
+  const skyR=sky(svg,grad(d,'v-sky',[[0,'#13060a'],[.5,'#5a1612'],[.72,'#b8441c'],[1,'#2a0a08']]));
+  const far=E('g',{'data-d':.1},svg);
+  const sun=E('circle',{cx:950,cy:600,r:95,fill:'#ff7a3a',opacity:.75},far);
+  const city=E('g',{'data-d':.25,fill:'#2a0b0e'},svg);
+  for(let x=-500;x<2200;){ const w=40+r()*80, h=60+r()*170; E('rect',{x,y:640-h,width:w,height:h+40},city);
+    if(r()<.55){ E('ellipse',{cx:x+w/2,cy:640-h,rx:w/2,ry:w*.48},city); E('rect',{x:x+w/2-2,y:640-h-w*.48-40,width:4,height:40},city); } x+=w+r()*14; }
+  E('rect',{x:-800,y:640,width:3200,height:600,fill:'#150507'},svg);
+  const mid=E('g',{'data-d':.55},svg);
+  [[560,720],[610,724],[660,722]].forEach(([x,y],i)=>figure(mid,{x,y,s:.9,fill:'#22080a'}));
+  E('path',{d:'M700 780 L860 760 L870 772 L710 792 Z M705 760 L862 782 L856 794 L700 772 Z',fill:'#3a1a0c'},mid);
+  fire(mid,782,772,1.1,grad(d,'v-fire',[[0,'#fff2a8'],[.45,'#ff9a3a'],[1,'#c22a10']]),6,r);
+  E('circle',{cx:782,cy:700,r:150,fill:grad(d,'v-glow',[[0,'#ff8a3a',.55],[1,'#ff8a3a',0]],'radial')},mid);
+  const fg=E('g',{'data-d':.95},svg);
+  const king=figure(fg,{x:1230,y:820,s:1.6,fill:'#090203',crown:true,weapon:'trident',flip:true});
+  return p=>{
+    king.ra.setAttribute('transform',`rotate(${(-sm(.16,.32,p)*58).toFixed(1)} 18 -128)`);
+    sun.setAttribute('cy',(600+sm(.6,.95,p)*90).toFixed(1));
+    skyR.setAttribute('opacity',(1-sm(.6,1,p)*.35).toFixed(3));
+    fx.mode='embers'; fx.k=.8;
+  };
+},
+mandara(svg,d){
+  const r=RNG(37);
+  sky(svg,grad(d,'m-sky',[[0,'#05050f'],[.7,'#1a1540'],[1,'#2a1d4a']]));
+  const st=E('g',{'data-d':.05},svg); starsField(st,r,160,560);
+  const r1=E('g',{'data-d':.12},svg); ridge(r1,r,470,230,'#1d1a3c',.8);
+  const r2=E('g',{'data-d':.28},svg); ridge(r2,r,600,200,'#141029',1.1);
+  const r3=E('g',{'data-d':.5},svg); ridge(r3,r,720,110,'#0b0918',1.6);
+  const mid=E('g',{'data-d':.6},svg);
+  E('path',{d:'M840 760 Q860 724 900 718 L1000 718 Q1040 724 1060 760 L1080 1000 L820 1000 Z',fill:'#07060f'},mid);
+  const heat=E('ellipse',{cx:950,cy:520,rx:120,ry:170,fill:grad(d,'m-heat',[[0,'#ff9a4a',.5],[1,'#ff9a4a',0]],'radial'),opacity:0},mid);
+  const man=figure(mid,{x:950,y:720,s:1.15,fill:'#04030a',arms:'up'});
+  const head=man.g.querySelector('circle');
+  const goldF=E('g',{opacity:0},mid); const gm=figure(goldF,{x:950,y:720,s:1.15,fill:'#f1b84a',arms:'up'});
+  E('ellipse',{cx:950,cy:560,rx:110,ry:190,fill:grad(d,'m-gold',[[0,'#ffd27a',.45],[1,'#ffd27a',0]],'radial')},goldF);
+  const moundG=E('g',{transform:'translate(950 726) scale(1 0)'},mid);
+  E('path',{d:'M-112 0 Q-104 -130 -52 -222 Q0 -282 52 -222 Q104 -130 112 0 Z',fill:'#2b2016'},moundG);
+  for(let i=0;i<46;i++){ const a=r()*Math.PI, rr=r(); E('circle',{cx:(Math.cos(a)*90*rr).toFixed(1),cy:(-Math.sin(a)*230*rr).toFixed(1),r:(1.5+r()*2.5).toFixed(1),fill:'#4a3824'},moundG); }
+  const grass=E('g',{opacity:0,stroke:'#3d5a2a','stroke-width':3,'stroke-linecap':'round'},moundG);
+  for(let i=0;i<34;i++){ const x=-100+r()*200, top=-Math.max(0,230*(1-Math.pow(Math.abs(x)/112,2)))*(.7+.3*r()); E('line',{x1:x,y1:top+4,x2:x+(r()-.5)*20,y2:top-18-r()*20},grass); }
+  [[-40,-330],[22,-380],[60,-300]].forEach(([x,h])=>{ E('rect',{x,y:h,width:7,height:-h-60,fill:'#4c6a32'},grass); for(let k=h+40;k<-80;k+=46) E('rect',{x:x-2,y:k,width:11,height:4,fill:'#2d4220'},grass); });
+  const brahma=E('g',{opacity:0},svg);
+  E('circle',{cx:950,cy:0,r:260,fill:grad(d,'m-b',[[0,'#fff2c8',.9],[.4,'#ffd27a',.35],[1,'#ffd27a',0]],'radial')},brahma);
+  lotus(brahma,950,30,1.1,'#ffd9e6');
+  const drops=E('g',{opacity:0,fill:'#cfe8ff'},svg); for(let i=0;i<14;i++) E('circle',{cx:900+r()*100,cy:120+i*38+r()*20,r:3+r()*2},drops);
+  return p=>{
+    heat.setAttribute('opacity',(bump(.08,.25,.55,.7,p)).toFixed(3));
+    const m=sm(.38,.56,p)*(1-sm(.8,.87,p)); moundG.setAttribute('transform',`translate(950 726) scale(1 ${m.toFixed(3)})`);
+    grass.setAttribute('opacity',(sm(.5,.6,p)).toFixed(3));
+    const by=lerp(-260,140,sm(.6,.76,p)); brahma.setAttribute('transform',`translate(0 ${by.toFixed(1)})`); brahma.setAttribute('opacity',sm(.58,.68,p).toFixed(3));
+    drops.setAttribute('opacity',bump(.72,.76,.84,.88,p).toFixed(3)); drops.setAttribute('transform',`translate(0 ${((p*900)%60).toFixed(1)})`);
+    goldF.setAttribute('opacity',sm(.83,.9,p).toFixed(3));
+    const smoke=bump(.08,.22,.6,.7,p);
+    if(smoke>.01){ const b=head.getBoundingClientRect(); fx.mode='smoke'; fx.k=smoke; fx.point=[b.left+b.width/2,b.top]; }
+    else { fx.mode='dust'; fx.k=sm(.6,.8,p); }
+  };
+},
+conquest(svg,d){
+  const r=RNG(51);
+  sky(svg,grad(d,'c-sky',[[0,'#120a22'],[.6,'#3b1830'],[1,'#6b2a30']]));
+  const st=E('g',{'data-d':.05},svg); starsField(st,r,90,500);
+  const far=E('g',{'data-d':.15},svg); clouds(far,r,8,-300,1900,560,700,'#5a2a44',.55,1.3);
+  const beam=E('path',{d:'M930 -300 L970 -300 L1080 900 L820 900 Z',fill:grad(d,'c-beam',[[0,'#ffffff',.6],[1,'#ffffff',0]]),opacity:0},svg);
+  const pal=E('g',{'data-d':.35},svg);
+  const pf='#1d1228', ps='#d9a441';
+  E('rect',{x:600,y:560,width:700,height:150,fill:pf},pal);
+  E('rect',{x:640,y:470,width:620,height:100,fill:pf},pal);
+  E('path',{d:'M790 470 Q950 250 1110 470 Z',fill:pf,stroke:ps,'stroke-width':3,'stroke-opacity':.6},pal);
+  E('rect',{x:946,y:220,width:8,height:60,fill:ps},pal); E('circle',{cx:950,cy:214,r:9,fill:ps},pal);
+  [[650,500],[1250,500],[560,580],[1340,580]].forEach(([x,y])=>{ E('rect',{x:x-30,y,width:60,height:720-y,fill:pf},pal); E('path',{d:`M${x-34} ${y} Q${x} ${y-80} ${x+34} ${y} Z`,fill:pf,stroke:ps,'stroke-width':2,'stroke-opacity':.5},pal); E('rect',{x:x-2,y:y-110,width:4,height:34,fill:ps},pal); });
+  for(let x=660;x<1260;x+=46) E('rect',{x,y:600,width:16,height:60,rx:8,fill:'#ff6a3a',opacity:.22},pal);
+  const throne=E('circle',{cx:950,cy:640,r:120,fill:grad(d,'c-throne',[[0,'#ff4a2a',.6],[1,'#ff4a2a',0]],'radial')},pal);
+  const banners=[]; [700,790,1110,1200].forEach((x,i)=>{ const b=E('path',{d:`M${x-20} 470 L${x+20} 470 L${x+20} 640 L${x} 615 L${x-20} 640 Z`,fill:'#a8221a'},pal); banners.push([b,x]); });
+  const child=E('circle',{cx:950,cy:690,r:40,fill:grad(d,'c-child',[[0,'#ffe29a',.9],[1,'#ffe29a',0]],'radial'),opacity:0},pal);
+  const fg=E('g',{'data-d':.85},svg); clouds(fg,r,6,-300,1900,780,940,'#2a1222',.95,1.8);
+  return p=>{
+    const u=sm(0,.25,p); banners.forEach(([b])=>b.setAttribute('transform',`translate(0 470) scale(1 ${Math.max(.001,u).toFixed(3)}) translate(0 -470)`));
+    beam.setAttribute('opacity',bump(.3,.45,.62,.78,p).toFixed(3));
+    child.setAttribute('opacity',sm(.72,.92,p).toFixed(3));
+    throne.setAttribute('opacity',(1-sm(.72,.92,p)*.6).toFixed(3));
+    fx.mode='stars'; fx.k=1-sm(.3,.5,p)*.7;
+  };
+},
+school(svg,d){
+  const r=RNG(67);
+  sky(svg,grad(d,'s-wall',[[0,'#1c0d06'],[.7,'#4a2610'],[1,'#2a1408']]));
+  const back=E('g',{'data-d':.15},svg);
+  [560,950,1340].forEach(x=>{ E('path',{d:`M${x-90} 640 L${x-90} 330 Q${x} 220 ${x+90} 330 L${x+90} 640 Z`,fill:'#0c1230'},back); });
+  [755,1145].forEach(x=>{ E('circle',{cx:x,cy:420,r:90,fill:grad(d,'s-lamp'+x,[[0,'#ffb35a',.5],[1,'#ffb35a',0]],'radial')},back); E('path',{d:flame(x,430,34,8),fill:'#ffd27a',class:'flick'},back); E('rect',{x:x-14,y:430,width:28,height:8,fill:'#5a3410'},back); });
+  E('rect',{x:-800,y:640,width:3200,height:600,fill:'#1a0c05'},svg);
+  const mid=E('g',{'data-d':.5},svg);
+  figure(mid,{x:560,y:800,s:1.05,fill:'#140803'}); figure(mid,{x:640,y:806,s:1,fill:'#140803'});
+  const aura=E('circle',{cx:980,cy:720,r:150,fill:grad(d,'s-aura',[[0,'#ffe6a0',.75],[1,'#ffe6a0',0]],'radial')},mid);
+  figure(mid,{x:980,y:800,s:.68,fill:'#0c0503',child:true});
+  const father=E('g',{opacity:0},mid); const fk=figure(father,{x:1260,y:820,s:1.45,fill:'#0a0302',crown:true,flip:true});
+  const rage=E('rect',{x:-800,y:-300,width:3200,height:1500,fill:'#7a1408',opacity:0},svg);
+  const trials=E('g',{'data-d':.7},svg);
+  const ele=E('g',{opacity:0},trials); elephant(ele,0,0,1,'#120804');
+  const snakes=E('g',{opacity:0},trials); serpent(snakes,700,820,240,22,'#0f1a0c'); serpent(snakes,1120,850,230,18,'#0f1a0c');
+  const fireG=E('g',{opacity:0},trials); fire(fireG,860,830,1,grad(d,'s-fire',[[0,'#fff2a8'],[.5,'#ff8a2a'],[1,'#b21e0a']]),4,r); fire(fireG,1100,830,1,'url(#s-fire)',4,r);
+  return p=>{
+    father.setAttribute('opacity',(sm(.16,.3,p)*(1-sm(.62,.7,p))).toFixed(3));
+    rage.setAttribute('opacity',(bump(.44,.52,.6,.68,p)*.4).toFixed(3));
+    const ex=lerp(1600,1240,sm(.66,.76,p)); ele.setAttribute('transform',`translate(${ex.toFixed(1)} 840)`);
+    ele.setAttribute('opacity',bump(.64,.68,.78,.83,p).toFixed(3));
+    snakes.setAttribute('opacity',bump(.76,.8,.88,.92,p).toFixed(3));
+    fireG.setAttribute('opacity',sm(.88,.93,p).toFixed(3));
+    aura.setAttribute('r',(150+sm(.6,1,p)*70).toFixed(1));
+    fx.mode=p>.87?'embers':'dust'; fx.k=p>.87?.8:.6;
+  };
+},
+pillar(svg,d){
+  const r=RNG(83);
+  const world=svg;
+  sky(world,grad(d,'p-wall',[[0,'#12070a'],[.6,'#2e1214'],[1,'#1a0a0a']]));
+  E('path',{d:'M-800 760 L2400 760 L2400 1200 L-800 1200 Z',fill:'#120607'},world);
+  const floor=E('g',{stroke:'#3a1a14','stroke-width':2,opacity:.7},world); for(let i=-14;i<=14;i++) E('line',{x1:950+i*20,y1:760,x2:950+i*170,y2:1200},floor);
+  const far=E('g',{'data-d':.12},world); [-380,-220,220,380].forEach(o=>column(far,950+o,340,740,30,'#2a1012','#ff9a6a'));
+  const mid=E('g',{'data-d':.3},world); [-720,-520,520,720].forEach(o=>column(mid,950+o,240,770,58,'#1c0a0b','#ff9a6a'));
+  E('path',{d:'M1180 760 L1180 600 L1220 560 L1300 560 L1340 600 L1340 760 Z',fill:'#1a0809'},mid);
+  const core=E('g',{'data-d':.45},world);
+  const lightBehind=E('rect',{x:880,y:180,width:140,height:590,fill:'#ffe9b0',opacity:0},core);
+  column(core,950,200,760,124,'#2a1113','#ffb27a');
+  let cd='M950 190'; let x=950; for(let y=210;y<=760;y+=26){ x=950+(r()-.5)*70; cd+=` L${x.toFixed(1)} ${y}`; }
+  cd+=' M948 330 L905 370 L890 420 M955 520 L1005 560 L1012 610';
+  const crackGlow=E('path',{d:cd,fill:'none',stroke:'#ffcf7a','stroke-width':16,'stroke-linecap':'round',opacity:0,pathLength:1,'stroke-dasharray':'1 1','stroke-dashoffset':1},core);
+  const crack=E('path',{d:cd,fill:'none',stroke:'#fff6dc','stroke-width':4,'stroke-linecap':'round',pathLength:1,'stroke-dasharray':'1 1','stroke-dashoffset':1},core);
+  const boy=figure(core,{x:740,y:800,s:.62,fill:'#0b0405',child:true});
+  const kingG=E('g',{},core); const king=figure(kingG,{x:0,y:0,s:1.45,fill:'#080203',crown:true,weapon:'sword',flip:true});
+  const burst=E('circle',{cx:950,cy:470,r:10,fill:grad(d,'p-burst',[[0,'#ffffff',1],[.35,'#fff0c0',.95],[.7,'#ffb35a',.5],[1,'#ffb35a',0]],'radial'),opacity:0},world);
+  const nsG=E('g',{opacity:0},world); const ns=narasimha(nsG,{x:950,y:790,s:1.25,fill:'#120806',eye:'#ffefb0'});
+  return (p,t)=>{
+    const kx=lerp(1330,1080,sm(.3,.46,p)); kingG.setAttribute('transform',`translate(${kx.toFixed(1)} 820)`);
+    king.ra.setAttribute('transform',`rotate(${(-sm(.6,.66,p)*70).toFixed(1)} 18 -128)`);
+    const c=sm(.64,.8,p); crack.setAttribute('stroke-dashoffset',(1-c).toFixed(3)); crackGlow.setAttribute('stroke-dashoffset',(1-c).toFixed(3)); crackGlow.setAttribute('opacity',(c*.8).toFixed(3));
+    lightBehind.setAttribute('opacity',(sm(.72,.84,p)*.6).toFixed(3));
+    const shake=bump(.64,.67,.74,.8,p)*14; const sx=(Math.sin(t*61)*shake).toFixed(1), sy=(Math.cos(t*47)*shake).toFixed(1);
+    core.setAttribute('transform',`translate(${sx} ${sy})`);
+    const b=sm(.82,.94,p); burst.setAttribute('r',(10+b*1500).toFixed(1)); burst.setAttribute('opacity',(b*(1-sm(.96,1.02,p)*.55)).toFixed(3));
+    nsG.setAttribute('opacity',sm(.9,.98,p).toFixed(3));
+    core.setAttribute('opacity',(1-sm(.86,.94,p)).toFixed(3));
+    if(c>.05&&p<.96){ fx.mode='sparks'; fx.k=c*(1-sm(.9,.96,p)); const bb=crack.getBoundingClientRect(); fx.point=[bb.left+bb.width/2,bb.top+bb.height*.45]; } else { fx.mode='dust'; fx.k=.4; }
+  };
+},
+threshold(svg,d){
+  const r=RNG(97);
+  sky(svg,grad(d,'t-sky',[[0,'#121640'],[.45,'#4a2a62'],[.7,'#c2563a'],[.78,'#ff9a4a'],[1,'#ff9a4a']]));
+  const far=E('g',{'data-d':.08},svg); starsField(far,r,50,300);
+  const clip=E('clipPath',{id:'t-clip'},d); E('rect',{x:-800,y:-300,width:3200,height:950},clip);
+  const sunG=E('g',{'clip-path':'url(#t-clip)'},svg); const sun=E('circle',{cx:950,cy:600,r:110,fill:'#ffcf7a'},sunG);
+  E('circle',{cx:950,cy:650,r:420,fill:grad(d,'t-sunglow',[[0,'#ffb35a',.45],[1,'#ffb35a',0]],'radial')},svg);
+  E('rect',{x:-800,y:650,width:3200,height:600,fill:'#160a10'},svg);
+  const mid=E('g',{'data-d':.4},svg);
+  E('path',{d:'M-800 -300 L2400 -300 L2400 1200 L1240 1200 L1240 230 L660 230 L660 1200 L-800 1200 Z',fill:'#0d0609'},mid);
+  E('path',{d:'M660 230 L1240 230 L1240 190 L660 190 Z',fill:'#1c0e12'},mid);
+  [690,1210].forEach(x=>{ for(let y=260;y<800;y+=70) E('rect',{x:x-14,y,width:28,height:4,fill:'#3a1e22'},mid); });
+  E('rect',{x:640,y:790,width:620,height:26,fill:'#1a0c10'},mid);
+  const edge=E('rect',{x:640,y:788,width:620,height:3,fill:'#ffb35a',opacity:.6},mid);
+  const nsG=E('g',{},mid); const ns=narasimha(nsG,{x:950,y:790,s:1.12,fill:'#0a0405',eye:'#ffd56b'});
+  const flash=E('rect',{x:-800,y:-300,width:3200,height:1500,fill:'#ff2a10',opacity:0},svg);
+  return (p,t)=>{
+    sun.setAttribute('cy',lerp(560,650,sm(0,.55,p)).toFixed(1));
+    const sh=bump(.05,.12,.28,.38,p)*9; nsG.setAttribute('transform',`translate(${(Math.sin(t*40)*sh).toFixed(1)} 0)`);
+    flash.setAttribute('opacity',(bump(.4,.47,.52,.62,p)*.32).toFixed(3));
+    edge.setAttribute('opacity',(.4+.6*bump(.35,.47,.6,.8,p)).toFixed(3));
+    fx.mode='embers'; fx.k=.35;
+  };
+},
+calm(svg,d){
+  const r=RNG(113);
+  sky(svg,grad(d,'k-a',[[0,'#1a0a08'],[.7,'#5a2410'],[1,'#2a1006']]));
+  const dawn=sky(svg,grad(d,'k-b',[[0,'#2a1c3a'],[.55,'#e89a5a'],[.8,'#ffd9a0'],[1,'#f0b070']])); dawn.setAttribute('opacity',0);
+  const far=E('g',{'data-d':.15},svg); clouds(far,r,7,-300,1900,260,520,'#ffd9b0',.35,1.2);
+  E('rect',{x:-800,y:720,width:3200,height:600,fill:'#1a0c08'},svg);
+  const mid=E('g',{'data-d':.45},svg);
+  const haloR=E('circle',{cx:1080,cy:440,r:380,fill:grad(d,'k-hr',[[0,'#ff4a2a',.8],[1,'#ff4a2a',0]],'radial')},mid);
+  const haloG=E('circle',{cx:1080,cy:440,r:380,fill:grad(d,'k-hg',[[0,'#ffe9a8',.9],[1,'#ffe9a8',0]],'radial'),opacity:0},mid);
+  E('path',{d:'M880 760 L880 520 Q1080 430 1280 520 L1280 760 Z',fill:'#1e0d0a'},mid);
+  E('rect',{x:840,y:760,width:480,height:30,fill:'#2a140e'},mid); E('rect',{x:800,y:790,width:560,height:30,fill:'#22100c'},mid);
+  narasimha(mid,{x:1080,y:760,s:1.05,fill:'#120806',eye:'#ffe6a0'});
+  const boyG=E('g',{},mid); const boy=figure(boyG,{x:0,y:0,s:.66,fill:'#0c0503',child:true});
+  return p=>{
+    const bx=lerp(380,840,sm(.22,.46,p)); boyG.setAttribute('transform',`translate(${bx.toFixed(1)} 820) rotate(${(-sm(.44,.52,p)*14).toFixed(1)} 0 -40)`);
+    const c=sm(.32,.62,p); haloG.setAttribute('opacity',c.toFixed(3)); haloR.setAttribute('opacity',(1-c).toFixed(3));
+    dawn.setAttribute('opacity',sm(.55,1,p).toFixed(3));
+    fx.mode='petals'; fx.k=sm(.3,.6,p);
+  };
+},
+thread(svg,d){
+  const r=RNG(131);
+  sky(svg,grad(d,'th-sky',[[0,'#07060f'],[1,'#140f22']]));
+  const st=E('g',{'data-d':.08},svg); starsField(st,r,180,900);
+  const g=E('g',{'data-d':.3},svg);
+  const pd='M760 740 C 810 650, 850 600, 900 590 S 1000 620, 1060 520 S 1150 380, 1220 360 S 1320 270, 1360 230';
+  E('path',{d:pd,fill:'none',stroke:'#e3b964','stroke-width':1.5,opacity:.2},g);
+  const glow=E('path',{d:pd,fill:'none',stroke:'#ffd27a','stroke-width':10,opacity:.25,pathLength:1,'stroke-dasharray':'1 1','stroke-dashoffset':1},g);
+  const line=E('path',{d:pd,fill:'none',stroke:'#ffe6a8','stroke-width':2.5,pathLength:1,'stroke-dasharray':'1 1','stroke-dashoffset':1},g);
+  const N=[[760,740,'Vaikuntha','the curse','#ffffff',0],[900,590,'Hiranyakashipu','Satya yuga','#f4efe2',.22],[1060,520,'Ravana','Treta yuga','#ff8a6b',.5],[1220,360,'Shishupala','Dvapara yuga','#f2c94c',.74],[1360,230,'Vaikuntha','home','#ffffff',.95]];
+  const nodes=N.map(([x,y,a,b,c,at])=>{ const n=E('g',{opacity:0},g); E('circle',{cx:x,cy:y,r:40,fill:c,opacity:.15},n); E('circle',{cx:x,cy:y,r:7,fill:c},n);
+    const t1=E('text',{x,y:y-24,'text-anchor':'middle',fill:'#efe7d6','font-family':'Cormorant Garamond, serif','font-size':26,'font-weight':600},n); t1.textContent=a;
+    const t2=E('text',{x,y:y+38,'text-anchor':'middle',fill:'#a79d8a','font-family':'Inter, sans-serif','font-size':15,'letter-spacing':1.5},n); t2.textContent=b.toUpperCase(); return [n,at]; });
+  return p=>{ const k=sm(.0,.85,p*1.6); line.setAttribute('stroke-dashoffset',(1-k).toFixed(3)); glow.setAttribute('stroke-dashoffset',(1-k).toFixed(3));
+    nodes.forEach(([n,at])=>n.setAttribute('opacity',sm(at,at+.06,k).toFixed(3))); fx.mode='dust'; fx.k=.6; };
+},
+};
+
+/* build stages */
+const stages=chapters.map(ch=>{
+  const st=ch.querySelector('.stage'); const svg=E('svg',{viewBox:'0 0 1600 900',preserveAspectRatio:'xMidYMid slice'},st);
+  const defs=E('defs',{},svg); const update=SCENES[ch.dataset.scene](svg,defs);
+  return {ch,svg,update,layers:[...svg.querySelectorAll('[data-d]')],meet:ch.dataset.scene==='thread'};
+});
+function fitViewBoxes(){
+  const a=innerWidth/innerHeight;
+  stages.forEach(s=>{ if(a<1.25 && !s.meet){ const vw=Math.max(420,900*a); s.svg.setAttribute('viewBox',`${(950-vw/2).toFixed(0)} 0 ${vw.toFixed(0)} 900`); }
+    else { s.svg.setAttribute('viewBox','0 0 1600 900'); s.svg.setAttribute('preserveAspectRatio',s.meet&&a<1.25?'xMidYMid meet':'xMidYMid slice'); } });
+}
+fitViewBoxes();
+
+/* ================================================================== */
+/* Particles                                                          */
+/* ================================================================== */
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const cv=document.getElementById('fx'), cx=cv.getContext('2d'); let DPR=1;
+function sizeCanvas(){ DPR=Math.min(devicePixelRatio||1,2); cv.width=innerWidth*DPR; cv.height=innerHeight*DPR; cx.setTransform(DPR,0,0,DPR,0,0); }
+sizeCanvas();
+const MODES={
+  dust:{rate:22,c:'255,226,160',vx:[-8,8],vy:[-14,6],sz:[.8,2.2],life:[5,9],from:'screen',a:.7},
+  embers:{rate:60,c:'255,140,60',vx:[-24,24],vy:[-110,-40],sz:[.8,2.4],life:[2,4.5],from:'bottom',a:.9},
+  smoke:{rate:22,c:'150,140,165',vx:[-10,10],vy:[-70,-36],sz:[8,18],grow:16,life:[3,6],from:'point',a:.09,soft:true},
+  stars:{rate:9,c:'255,240,220',vx:[-260,-160],vy:[220,320],sz:[1,1.8],life:[1.4,2.4],from:'top',a:.9,streak:true},
+  sparks:{rate:160,c:'255,236,180',vx:[-320,320],vy:[-300,240],sz:[1,2.6],life:[.5,1.4],from:'point',a:1,drag:true},
+  petals:{rate:16,c:'255,176,196',vx:[-24,24],vy:[30,70],sz:[2.6,4.6],life:[7,11],from:'top',a:.85,petal:true},
+};
+let parts=[], acc=0;
+const rr=(a)=>a[0]+Math.random()*(a[1]-a[0]);
+function spawn(m){
+  let x,y; const w=innerWidth,h=innerHeight;
+  if(m.from==='screen'){x=Math.random()*w;y=Math.random()*h;} else if(m.from==='bottom'){x=Math.random()*w;y=h+10;}
+  else if(m.from==='top'){x=Math.random()*w*1.3;y=-10;} else { if(!fx.point) return; x=fx.point[0]+rr([-8,8]); y=fx.point[1]+rr([-6,6]); }
+  parts.push({x,y,vx:rr(m.vx),vy:rr(m.vy),s:rr(m.sz),life:rr(m.life),age:0,m,rot:Math.random()*6});
+}
+function stepParticles(dt){
+  cx.clearRect(0,0,innerWidth,innerHeight);
+  if(reduce || document.body.classList.contains('read')) { parts.length=0; return; }
+  const m=MODES[fx.mode];
+  if(m && fx.k>0){ acc+=m.rate*fx.k*dt; while(acc>1){ spawn(m); acc--; } if(parts.length>600) parts.splice(0,parts.length-600); }
+  for(let i=parts.length-1;i>=0;i--){
+    const q=parts[i]; q.age+=dt; if(q.age>q.life){ parts.splice(i,1); continue; }
+    if(q.m.drag){ q.vx*=.96; q.vy=q.vy*.96+140*dt; }
+    q.x+=q.vx*dt+(q.m.petal?Math.sin(q.age*2+q.rot)*20*dt:0); q.y+=q.vy*dt;
+    const lf=q.age/q.life, al=q.m.a*Math.sin(Math.PI*lf);
+    if(q.m.soft){ const s=q.s+q.m.grow*q.age; const g=cx.createRadialGradient(q.x,q.y,0,q.x,q.y,s); g.addColorStop(0,`rgba(${q.m.c},${al})`); g.addColorStop(1,`rgba(${q.m.c},0)`); cx.fillStyle=g; cx.fillRect(q.x-s,q.y-s,s*2,s*2); }
+    else if(q.m.streak){ cx.strokeStyle=`rgba(${q.m.c},${al})`; cx.lineWidth=q.s; cx.beginPath(); cx.moveTo(q.x,q.y); cx.lineTo(q.x-q.vx*.08,q.y-q.vy*.08); cx.stroke(); }
+    else if(q.m.petal){ cx.save(); cx.translate(q.x,q.y); cx.rotate(q.rot+q.age); cx.fillStyle=`rgba(${q.m.c},${al})`; cx.beginPath(); cx.ellipse(0,0,q.s*1.6,q.s*.8,0,0,Math.PI*2); cx.fill(); cx.restore(); }
+    else { cx.fillStyle=`rgba(${q.m.c},${al})`; cx.beginPath(); cx.arc(q.x,q.y,q.s,0,Math.PI*2); cx.fill(); }
+  }
+}
+
+/* ================================================================== */
+/* Loop                                                               */
+/* ================================================================== */
+const check=[...document.querySelectorAll('#check li')], checkCard=document.getElementById('checkCard');
+let last=performance.now(), activeIdx=-1;
+function frame(now){
+  requestAnimationFrame(frame);
+  const dt=Math.min(.05,(now-last)/1000); last=now; const t=now/1000;
+  const max=document.documentElement.scrollHeight-innerHeight;
+  document.getElementById('progress').style.width=(max>0?scrollY/max*100:0)+'%';
+  const read=document.body.classList.contains('read');
+  let centerIdx=-1; fx.mode='none'; fx.k=0;
+  stages.forEach((s,i)=>{
+    if(s.ch.offsetParent===null) return; // hidden (locked)
+    const rc=s.ch.getBoundingClientRect();
+    if(rc.top<=innerHeight/2 && rc.bottom>=innerHeight/2) centerIdx=i;
+    if(read || rc.bottom<0 || rc.top>innerHeight) return;
+    const p=cl(-rc.top/Math.max(1,rc.height-innerHeight));
+    s.layers.forEach(l=>{ const dd=+l.dataset.d; l.setAttribute('transform',`translate(0 ${((.5-p)*dd*150).toFixed(1)})`); });
+    const keep={mode:fx.mode,k:fx.k,point:fx.point};
+    s.update(p,t);
+    if(centerIdx!==i){ fx.mode=keep.mode; fx.k=keep.k; fx.point=keep.point; }
+  });
+  if(centerIdx!==activeIdx){ dots.forEach((d,i)=>d.classList.toggle('on',i===centerIdx)); activeIdx=centerIdx; }
+  // the boon checklist lights up as you read it
+  if(checkCard.offsetParent){ const rc=checkCard.getBoundingClientRect(); const k=forceAll||read?1:cl((innerHeight*.9-rc.top)/(rc.height*.9)); const n=Math.round(k*check.length); check.forEach((li,i)=>li.classList.toggle('on',i<n)); }
+  stepParticles(dt);
+}
+requestAnimationFrame(frame);
+addEventListener('resize',()=>{ sizeCanvas(); fitViewBoxes(); });
+</script>
+</body>
+</html>
