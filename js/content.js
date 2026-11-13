@@ -57,7 +57,7 @@ export const STOPS = [
     kicker:'Upper world 6 of 7', title:'Tapoloka', deva:'तपोलोक', iast:'Tapoloka',
     body:`<p>Home of the Vaibhraja gods, who cannot be burned by the fire that ends the world.</p>`,
     src:'Vishnu Purana 2.7' },
-  { id:'jana', nav:'Janaloka', grp:'up', y:4*S, dist:60, h:16, ang:1.25, fog:.008,
+  { id:'jana', nav:'Janaloka', grp:'up', y:4*S, dist:64, h:28, ang:1.25, fog:.008,
     kicker:'Upper world 5 of 7', title:'Janaloka', deva:'जनलोक', iast:'Janaloka',
     body:`<p>Home of Sanandana and the other mind-born sons of Brahma. Four of these eternal child-sages once came to Vaikuntha and were turned away at the gate. They cursed the two doorkeepers to be born on earth, three times over.</p>`,
     links:[{label:'The curse at Vaikuntha’s gate'}],

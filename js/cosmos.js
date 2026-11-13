@@ -8,6 +8,7 @@ import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { S, STOPS, YUGAS } from './content.js';
+import { makeGalaxy } from './galaxy.js';
 import { reduce, mobile, camAt, measure, noWebGL } from './page.js';
 
 let renderer;
@@ -150,6 +151,7 @@ const dharmaPts=new THREE.Points(dGeo,new THREE.PointsMaterial({size:.38,map:GLO
 // a loka = stacked layers of glowing gas (a shader), sparkle stars, and for the lower worlds, jewel lights
 const spinners=[], discs=[];
 const DU={ time:{value:0}, dharma:{value:1} };   // shared by every disc
+const GU={ px:{value:1} };                        // pixels per scene unit at distance 1, for sizing points (set on resize)
 const discMat=(o,layer)=>new THREE.ShaderMaterial({
   uniforms:{ time:DU.time, dharma:DU.dharma, fade:{value:1}, layer:{value:layer}, seed:{value:o.seed},
     colA:{value:new THREE.Color(o.A)}, colB:{value:new THREE.Color(o.B)}, colC:{value:new THREE.Color(o.C)},
@@ -195,11 +197,18 @@ function loka(y,r,o){
     grp.add(makePoints(gp,gc,1.5,1)); }
   scene.add(grp); spinners.push([grp,(o.spin||1)*.3]); discs.push(grp); return grp;
 }
+// a loka as a living galaxy (js/galaxy.js): stars on their own orbits, with gas, bright knots and dust along the arms
+function galaxy(y,o){
+  const { group, mats }=makeGalaxy({ ...o, time:DU.time, px:GU.px, low:lowTier }); group.position.y=y;
+  const core=sprite(o.A,o.R*.3,.14); group.add(core);                                        // the glow of the crowded centre
+  mats.push({ uniforms:{ fade:{ set value(v){ core.material.opacity=.14*v; } } } });          // fades with the rest
+  group.userData.mats=mats; group.userData.fade=1; scene.add(group); discs.push(group); return group;
+}
 
 // upper worlds: made of light
 const satya=loka(6*S,30,{A:'#ffe9d0',B:'#ffb27e',C:'#c2457e',arms:8,twist:.7,speed:.012,dust:.35,core:.25,bright:.42,hole:0,seed:1,stars:400});   // a lotus of light
 loka(5*S,36,{A:'#fff0ff',B:'#e0a6ff',C:'#6a46ff',arms:3,twist:3.4,speed:.01,dust:.45,core:1.2,bright:1.05,hole:0,seed:2});
-loka(4*S,40,{A:'#f2f6ff',B:'#a8bcff',C:'#3d5cff',arms:2,twist:4.6,speed:.009,dust:.55,core:1.3,bright:1.0,hole:0,seed:3});
+galaxy(4*S,{R:40,A:'#f2f6ff',B:'#a8bcff',C:'#3d5cff',K:'#ff9fd8',arms:2,twist:3,seed:3});   // Janaloka
 loka(3*S,44,{A:'#ecfcff',B:'#8fe2ff',C:'#2678b0',arms:4,twist:3.0,speed:.008,dust:.5,core:1.0,bright:.95,hole:0,seed:4});
 loka(2*S,48,{A:'#fffbe6',B:'#ffd46a',C:'#c0781e',arms:2,twist:5.2,speed:.007,dust:.7,core:1.5,bright:1.05,hole:0,seed:5});
 loka(1*S,52,{A:'#fff0dc',B:'#ffb47e',C:'#8a4a7a',arms:3,twist:2.0,speed:.006,dust:.35,core:.4,bright:.8,hole:.18,seed:6,thick:2.2});   // the open sky
@@ -519,6 +528,7 @@ const finish=new ShaderPass({
 composer.addPass(finish);
 
 function resize(){ renderer.setSize(innerWidth,innerHeight); composer.setSize(innerWidth,innerHeight); finish.uniforms.res.value.set(innerWidth,innerHeight); starU.pr.value=renderer.getPixelRatio();
+  GU.px.value=renderer.getDrawingBufferSize(new THREE.Vector2()).y/(2*Math.tan(THREE.MathUtils.degToRad(camera.fov)/2));
   if(lowTier) bloom.resolution.set(innerWidth/2,innerHeight/2);
   camera.aspect=innerWidth/innerHeight;
   // keep the cosmos to the right of the reading card on wide screens
