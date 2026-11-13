@@ -148,70 +148,25 @@ for(let i=0;i<DN;i++){ const a=Math.random()*Math.PI*2, r=Math.pow(Math.random()
 const dGeo=new THREE.BufferGeometry(); dGeo.setAttribute('position',new THREE.BufferAttribute(dpos,3));
 const dharmaPts=new THREE.Points(dGeo,new THREE.PointsMaterial({size:.38,map:GLOW,transparent:true,opacity:.4,depthWrite:false,blending:AD,color:YUGAS[0].tint})); scene.add(dharmaPts);
 
-// a loka = stacked layers of glowing gas (a shader), sparkle stars, and for the lower worlds, jewel lights
-const spinners=[], discs=[];
+// every loka is a living galaxy (js/galaxy.js)
+const spinners=[], discs=[], galaxies=[];
 const DU={ time:{value:0}, dharma:{value:1} };   // shared by every disc
 const GU={ px:{value:1} };                        // pixels per scene unit at distance 1, for sizing points (set on resize)
-const discMat=(o,layer)=>new THREE.ShaderMaterial({
-  uniforms:{ time:DU.time, dharma:DU.dharma, fade:{value:1}, layer:{value:layer}, seed:{value:o.seed},
-    colA:{value:new THREE.Color(o.A)}, colB:{value:new THREE.Color(o.B)}, colC:{value:new THREE.Color(o.C)},
-    arms:{value:o.arms}, twist:{value:o.twist}, speed:{value:o.speed}, dust:{value:o.dust}, core:{value:o.core}, bright:{value:o.bright}, hole:{value:o.hole} },
-  vertexShader:`varying vec2 vP; uniform float layer; void main(){ vP=position.xy/${'${R}'}; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
-  fragmentShader:`uniform float time,dharma,fade,layer,seed,arms,twist,speed,dust,core,bright,hole; uniform vec3 colA,colB,colC; varying vec2 vP;
-  ${NOISE}
-  void main(){
-    float r=length(vP); if(r>1.0) discard;
-    float rot=time*speed;
-    float a=r<1e-4?0.0:atan(vP.y,vP.x);
-    vec2 q=vec2(cos(a-rot),sin(a-rot))*r;
-    float w=fbm(vec3(q*2.6,seed+layer*1.3));                                   // domain warp
-    float phase=a*arms-log(r+0.04)*twist-rot*arms+w*2.4;
-    float arm=pow(max(0.0,0.5+0.5*cos(phase)),2.2);                                      // spiral arms
-    float gas=fbm(vec3(q*5.5+w*1.2,seed*1.7+layer*3.1+time*0.012));             // gas clumps
-    float dens=mix(gas,gas*arm*2.3,0.85);
-    float lane=pow(max(0.0,0.5+0.5*cos(phase+0.9)),6.0)*dust*smoothstep(0.12,0.45,r);   // dark dust lanes trailing each arm
-    float prof=(1.0-smoothstep(0.62,1.0,r))*smoothstep(hole,hole+0.22,r);
-    float coreG=exp(-r*r*55.0)*core*0.55;
-    vec3 col=mix(colA,colB,smoothstep(0.0,0.42,r)); col=mix(col,colC,smoothstep(0.38,1.0,r));
-    float spark=pow(max(0.0,vnoise(vec3(q*95.0,seed+layer*7.0))),22.0)*prof*3.0;      // embedded young stars
-    vec3 c=col*dens*prof*(1.0-lane*0.9)*bright + colA*coreG*bright + vec3(1.0,0.95,0.9)*spark*bright;
-    c*=(0.55+0.45*dharma)*fade;
-    c*= (layer==0.0)?1.0:0.6;
-    gl_FragColor=vec4(clamp(c,0.0,40.0),1.0);
-  }`,
-  transparent:true, depthWrite:false, blending:AD, side:THREE.DoubleSide });
-function loka(y,r,o){
-  const grp=new THREE.Group(); grp.position.y=y;
-  const layers=lowTier?[0,1]:[0,1,2];
-  layers.forEach(L=>{ const geo=new THREE.CircleGeometry(r*(1-L*.06),160); const mat=discMat(o,L);
-    mat.vertexShader=mat.vertexShader.replace('${R}',(r*(1-L*.06)).toFixed(2));
-    const m=new THREE.Mesh(geo,mat); m.rotation.x=-Math.PI/2; m.position.y=[0,.9,-.9][L]*(o.thick||1); m.renderOrder=1; grp.add(m); (grp.userData.mats=grp.userData.mats||[]).push(mat); });
-  grp.userData.fade=1;
-  // sparkle stars sitting in the disc
-  { const pos=[],col=[]; const A=new THREE.Color(o.A),C=new THREE.Color(o.C);
-    for(let i=0;i<(o.stars??500);i++){ const a=Math.random()*Math.PI*2, rr=r*(.15+.85*Math.pow(Math.random(),.7));
-      pos.push(Math.cos(a)*rr,rnd(-1,1)*(o.thick||1),Math.sin(a)*rr); const c=A.clone().lerp(C,rr/r), b=rnd(.4,1); col.push(c.r*b,c.g*b,c.b*b); }
-    grp.add(makePoints(pos,col,.42,.9)); }
-  if(o.gems){ const gp=[],gc=[]; const pal=['#ff4d6d','#4cc9ff','#ffd166','#7cff9b','#c77dff'].map(h=>new THREE.Color(h));
-    for(let i=0;i<o.gems;i++){ const a=Math.random()*Math.PI*2, rr=r*Math.sqrt(Math.random()); gp.push(Math.cos(a)*rr,rnd(-.4,1.6),Math.sin(a)*rr); const c=pal[i%pal.length]; gc.push(c.r*1.4,c.g*1.4,c.b*1.4); }
-    grp.add(makePoints(gp,gc,1.5,1)); }
-  scene.add(grp); spinners.push([grp,(o.spin||1)*.3]); discs.push(grp); return grp;
-}
-// a loka as a living galaxy (js/galaxy.js): stars on their own orbits, with gas, bright knots and dust along the arms
+// a loka as a living galaxy: stars on their own orbits, with gas, bright knots and dust along the arms
 function galaxy(y,o){
-  const { group, mats }=makeGalaxy({ ...o, time:DU.time, px:GU.px, low:lowTier }); group.position.y=y;
-  const core=sprite(o.A,o.R*.3,.14); group.add(core);                                        // the glow of the crowded centre
-  mats.push({ uniforms:{ fade:{ set value(v){ core.material.opacity=.14*v; } } } });          // fades with the rest
-  group.userData.mats=mats; group.userData.fade=1; scene.add(group); discs.push(group); return group;
+  const { group, mats, lod }=makeGalaxy({ ...o, time:DU.time, px:GU.px, low:lowTier }); group.position.y=y;
+  if(!o.hole){ const core=sprite(o.A,o.R*.3,.14); group.add(core);                           // the glow of the crowded centre
+    mats.push({ uniforms:{ fade:{ set value(v){ core.material.opacity=.14*v; } } } }); }       // fades with the rest
+  group.userData.mats=mats; group.userData.fade=1; scene.add(group); discs.push(group); galaxies.push({ group, lod }); return group;
 }
 
 // upper worlds: made of light
-const satya=loka(6*S,30,{A:'#ffe9d0',B:'#ffb27e',C:'#c2457e',arms:8,twist:.7,speed:.012,dust:.35,core:.25,bright:.42,hole:0,seed:1,stars:400});   // a lotus of light
-loka(5*S,36,{A:'#fff0ff',B:'#e0a6ff',C:'#6a46ff',arms:3,twist:3.4,speed:.01,dust:.45,core:1.2,bright:1.05,hole:0,seed:2});
+galaxy(6*S,{R:30,A:'#ffe9d0',B:'#ffb27e',C:'#c2457e',K:'#ffd0e0',arms:8,twist:.55,strength:.7,bulge:.08,glow:.55,seed:1});   // Satyaloka: a lotus of light, opening in petals
+galaxy(5*S,{R:36,A:'#fff0ff',B:'#e0a6ff',C:'#6a46ff',K:'#ffb8ff',arms:3,twist:2.6,glow:1.0,seed:2});   // Tapoloka
 galaxy(4*S,{R:40,A:'#f2f6ff',B:'#a8bcff',C:'#3d5cff',K:'#ff9fd8',arms:2,twist:3,seed:3});   // Janaloka
-loka(3*S,44,{A:'#ecfcff',B:'#8fe2ff',C:'#2678b0',arms:4,twist:3.0,speed:.008,dust:.5,core:1.0,bright:.95,hole:0,seed:4});
-loka(2*S,48,{A:'#fffbe6',B:'#ffd46a',C:'#c0781e',arms:2,twist:5.2,speed:.007,dust:.7,core:1.5,bright:1.05,hole:0,seed:5});
-loka(1*S,52,{A:'#fff0dc',B:'#ffb47e',C:'#8a4a7a',arms:3,twist:2.0,speed:.006,dust:.35,core:.4,bright:.8,hole:.18,seed:6,thick:2.2});   // the open sky
+galaxy(3*S,{R:44,A:'#ecfcff',B:'#8fe2ff',C:'#2678b0',K:'#9ff0ff',arms:4,twist:2.0,glow:.95,seed:4});   // Maharloka
+galaxy(2*S,{R:48,A:'#fffbe6',B:'#ffd46a',C:'#c0781e',K:'#ffe4a0',arms:2,twist:3.6,strength:.85,glow:1.0,seed:5});   // Svarloka
+galaxy(1*S,{R:52,A:'#fff0dc',B:'#ffb47e',C:'#8a4a7a',K:'#ffc0a0',arms:3,twist:1.8,glow:.8,hole:.18,thick:1.4,scale:.42,white:.16,seed:6});   // Bhuvarloka, the open sky
 
 // Satyaloka lotus: real petal shapes that glow at their edges, so the flower reads against the light
 function petalGeo(len,wid,cup,curl){
@@ -404,17 +359,18 @@ const meruCap=sprite('#fff1d6',6,.25); meruCap.position.y=meruTop+2.2; bhu.add(m
   const lokaloka=new THREE.Mesh(g,new THREE.MeshStandardMaterial({color:'#7a6444',map:tex('rock_diff',true,1,1),normalMap:tex('rock_nor',false,1,1),roughness:.9,metalness:.05,side:THREE.DoubleSide})); bhu.add(lokaloka); }
 
 // lower worlds
-loka(-1*S,50,{A:'#d6c8ff',B:'#6c4cff',C:'#1c0e46',arms:3,twist:2.6,speed:-.006,dust:.85,core:.5,bright:.55,hole:.1,seed:11,gems:70});
-const vitala=loka(-2*S,50,{A:'#fff2b8',B:'#ffb81e',C:'#4a2600',arms:2,twist:3.2,speed:-.006,dust:.8,core:.8,bright:.6,hole:.08,seed:12,gems:50});
+// lower worlds: they turn the other way, have no bright centre (no sun reaches them), and are lit by jewels
+galaxy(-1*S,{R:50,A:'#d6c8ff',B:'#6c4cff',C:'#1c0e46',K:'#b9a0ff',arms:3,twist:2.2,speed:-.8,glow:.7,warmCore:false,white:.12,scale:.46,hole:.1,gems:70,seed:11});   // Atala
+const vitala=galaxy(-2*S,{R:50,A:'#fff2b8',B:'#ffb81e',C:'#4a2600',K:'#ffe08a',arms:2,twist:2.6,speed:-.8,glow:.75,warmCore:false,white:.12,scale:.46,hole:.08,gems:50,seed:12});   // Vitala
 { const pts=[]; for(let i=0;i<=200;i++){ const a=i/200*Math.PI*2, r=30+Math.sin(a*6)*2.5; pts.push(new THREE.Vector3(Math.cos(a)*r,Math.sin(a*9)*.6,Math.sin(a)*r)); }
   const river=new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts,true),400,.55,8,true),new THREE.MeshBasicMaterial({color:'#ffcf57',transparent:true,opacity:.85,blending:AD,depthWrite:false}));
-  vitala.add(river); }
-const sutala=loka(-3*S,50,{A:'#ffe6b8',B:'#ff8a2a',C:'#4a1400',arms:4,twist:2.4,speed:-.005,dust:.6,core:1.0,bright:.75,hole:.05,seed:13,gems:60});
+  vitala.add(river); spinners.push([river,-.3]); }   // the river of gold flows round
+const sutala=galaxy(-3*S,{R:50,A:'#ffe6b8',B:'#ff8a2a',C:'#4a1400',K:'#ffb15c',arms:4,twist:2.0,speed:-.75,glow:.85,warmCore:false,white:.12,scale:.46,hole:.05,gems:60,seed:13});   // Sutala
 { const g=sprite('#ffb060',30,.55); g.position.y=2; sutala.add(g); }
-loka(-4*S,50,{A:'#ffd6d6',B:'#ff4a4a',C:'#32000e',arms:3,twist:3.8,speed:-.005,dust:.85,core:.6,bright:.55,hole:.1,seed:14,gems:60});
-loka(-5*S,50,{A:'#d6fff6',B:'#2dd4bf',C:'#00302b',arms:5,twist:2.2,speed:-.005,dust:.8,core:.5,bright:.55,hole:.12,seed:15,gems:80});
-loka(-6*S,50,{A:'#ffc4b4',B:'#e02a2a',C:'#220004',arms:2,twist:4.4,speed:-.004,dust:.95,core:.7,bright:.5,hole:.1,seed:16,gems:50});
-loka(-7*S,50,{A:'#e6f6ff',B:'#4cc9ff',C:'#24104e',arms:3,twist:3.0,speed:-.004,dust:.7,core:.6,bright:.6,hole:.08,seed:17,gems:520});
+galaxy(-4*S,{R:50,A:'#ffd6d6',B:'#ff4a4a',C:'#32000e',K:'#ff7a7a',arms:3,twist:2.9,speed:-.75,glow:.7,warmCore:false,white:.12,scale:.46,hole:.1,gems:60,seed:14});   // Talatala
+galaxy(-5*S,{R:50,A:'#d6fff6',B:'#2dd4bf',C:'#00302b',K:'#7fffe0',arms:5,twist:1.8,speed:-.7,glow:.7,warmCore:false,white:.12,scale:.46,hole:.12,gems:80,seed:15});   // Mahatala
+galaxy(-6*S,{R:50,A:'#ffc4b4',B:'#e02a2a',C:'#220004',K:'#ff6b5a',arms:2,twist:3.2,speed:-.7,glow:.65,warmCore:false,white:.12,scale:.46,hole:.1,gems:50,seed:16});   // Rasatala
+galaxy(-7*S,{R:50,A:'#e6f6ff',B:'#4cc9ff',C:'#24104e',K:'#9fe8ff',arms:3,twist:2.4,speed:-.65,glow:.75,warmCore:false,white:.12,scale:.46,hole:.08,gems:520,seed:17});   // Patala
 
 // Ananta Shesha. The seven hooded heads are cut from "King Cobra" by Anthony Yanez (CC BY 4.0) and retinted to moon-white;
 // the coils are generated: one body that rises at the cosmic axis and tapers, turn by turn, to the tip of the tail.
@@ -588,6 +544,7 @@ function frame(now){
       // and one the camera is passing through, near its centre (on the way to and from the sky stop)
       const inside=Math.abs(g.position.y-camera.position.y)<9 && Math.hypot(camera.position.x,camera.position.z)<55;
       g.userData.fade+=((between||inside?0:1)-g.userData.fade)*Math.min(1,dt*3); g.userData.mats.forEach(m=>m.uniforms.fade.value=g.userData.fade); }); }
+  galaxies.forEach(G=>{ if(G.group.visible) G.lod(85/camera.position.distanceTo(G.group.position)); });   // a world seen from afar draws fewer, brighter points
   composer.render();
   updateLabels();
 }
