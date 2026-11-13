@@ -27,6 +27,7 @@ Then go to <http://localhost:5173>. The page needs a server: browsers won't run 
 | `js/page.js` | The page: builds each world's text, the rail and read mode, and turns scrolling into a camera path |
 | `js/cosmos.js` | The 3D scene: the night sky, the egg, the fourteen worlds, Mount Meru and Ananta Shesha |
 | `js/galaxy.js` | A world as a living galaxy: stars on their own orbits, with gas, star-forming knots and dust along spiral arms that hold their shape while everything flows through them |
+| `js/nebula.js` | A world of living fire: sharp flame and smoke painted once at load in high detail, then layered through the world's thickness round a burning star (Tapoloka) |
 | `vendor/three/` | three.js 0.160.0 and the add-ons the scene uses |
 | `assets/sky/` | The real night sky (NASA star map) and the 7,000 brightest stars taken from it (`stars.bin`, packed from `stars.json`) |
 | `assets/tex/` | Textures for the oceans, continents, Meru and Shesha |

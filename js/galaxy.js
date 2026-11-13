@@ -54,13 +54,14 @@ function layer({ count, attrs, vertex, fragment, uniforms, blending = THREE.Addi
     o.hole     an empty centre, 0..1 of R       o.gems     jewel lights orbiting in the disc (the lower worlds)
     o.glow     overall brightness               o.scale    how far the light spreads (0.3)
     o.white    how far the stars lean to white (0.3)   o.warmCore false for a world no sun reaches: no warm old centre
+    o.young    colour of the young stars in the arms (blue-white)
     o.time, o.px: shared uniforms                o.low: fewer points, for phones
     lod(f) draws only that share (0.1..1) of the stars and puffs, a little brighter each, for a world seen from afar  */
 export function makeGalaxy(o) {
   const r = rng(o.seed || 1), low = !!o.low, R = o.R, thick = o.thick || 1, hole = o.hole || 0, sc = o.scale ?? .3, wh = o.white ?? .3;
   const dir = Math.sign(o.speed ?? 1) || 1, arms = o.arms || 2;               // a world turning the other way has its arms mirrored, so they still trail
   const A = new THREE.Color(o.A), B = new THREE.Color(o.B), C = new THREE.Color(o.C), K = new THREE.Color(o.K || '#ff8fc8');
-  const warm = o.warmCore === false ? new THREE.Color(o.A) : new THREE.Color('#ffe2b8'), young = new THREE.Color('#cfe0ff'), white = new THREE.Color(1, 1, 1);
+  const warm = o.warmCore === false ? new THREE.Color(o.A) : new THREE.Color('#ffe2b8'), young = new THREE.Color(o.young || '#cfe0ff'), white = new THREE.Color(1, 1, 1);
   const omega0 = .011 * (o.speed ?? 1), core = .14, patt = omega0 / .62;    // the pattern turns with the stars at 62% of the radius
   const U = () => ({ time: o.time, px: o.px, fade: { value: 1 }, glow: { value: o.glow ?? 1 }, hole: { value: hole },
     R: { value: R }, twist: { value: (o.twist ?? 2.4) * dir }, strength: { value: o.strength ?? .8 }, arms: { value: arms },
