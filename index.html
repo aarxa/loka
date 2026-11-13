@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Loka · The Puranic cosmos</title>
 <meta name="description" content="An explorable universe of Hindu mythology: fall through the fourteen worlds of the Puranas, from Brahma’s world down to Ananta Shesha.">
+<meta name="author" content="Aarya Rajgor">
 <meta name="theme-color" content="#07060c">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2307060c'/%3E%3Cellipse cx='16' cy='16' rx='8' ry='12.5' fill='none' stroke='%23e3b964' stroke-width='1.8'/%3E%3Ccircle cx='16' cy='16' r='2.2' fill='%23e3b964'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -127,6 +128,8 @@ nav.map{position:fixed;right:30px;top:50%;transform:translateY(-50%);z-index:15;
 .site-foot li+li{margin-top:6px}
 .site-foot a{text-decoration:underline;text-decoration-color:rgba(232,196,120,.35);text-underline-offset:2px}
 .site-foot a:hover{color:var(--ink-2)}
+.site-foot small{display:block;font-size:12px;color:var(--faint);line-height:1.4}
+.site-foot .by{margin-top:14px;color:var(--ink-2)}
 .sf-base{grid-column:1/-1;border-top:1px solid var(--rule);padding-top:20px;font-size:12px;color:var(--faint)}
 /* dial */
 .dial[hidden]{display:none}
@@ -171,10 +174,26 @@ nav.map{position:fixed;right:30px;top:50%;transform:translateY(-50%);z-index:15;
 .dial.collapsed{width:330px}
 .dial.collapsed .dial-full{display:none}
 .dial.collapsed .dial-mini{display:flex}
-/* read mode: the same text as a plain, centred document */
+/* read mode: the same text as a plain, centred document, with a guide and a deeper note for each world */
+.deep,.contents{display:none}
+body.read .deep{display:block;margin-top:26px;padding-top:22px;border-top:1px solid var(--rule)}
+.deep .label{margin-bottom:10px}
+.deep p{margin:0 0 .85em;font:400 17px/1.68 var(--read);color:var(--ink-2)}
+.deep p:last-child{margin-bottom:0}
+.deep h3{margin:28px 0 8px;font:500 27px/1.2 var(--display);color:var(--ink)}
+.deep h3:first-child{margin-top:2px}
+.deep i{color:var(--ink)}
+body.read .contents{display:block;margin-top:30px}
+.contents ol{list-style:none;margin:0;padding:0;columns:2;column-gap:36px}
+.contents li{break-inside:avoid;margin:0 0 5px;font:400 16px/1.5 var(--read)}
+.contents li.g{font:500 11px/1.4 var(--ui);letter-spacing:.2em;text-transform:uppercase;color:var(--gold-2);margin:14px 0 5px}
+.contents li.g:first-child{margin-top:0}
+.contents a{text-decoration:none;border-bottom:1px solid var(--rule)}
+.contents a:hover{color:var(--gold);border-color:var(--line)}
+
 body.read #gl,body.read #labels,body.read .vignette,body.read .scrim,body.read nav.map{display:none}
 body.read main{max-width:720px;margin:0 auto}
-body.read section.stop{min-height:0;display:block;padding:48px 24px 44px;border-bottom:1px solid var(--rule)}
+body.read section.stop{min-height:0;display:block;padding:48px 24px 44px;border-bottom:1px solid var(--rule);scroll-margin-top:40px}
 body.read section.stop:first-child{padding-top:112px}
 body.read section.stop:last-child{border-bottom:0;padding-bottom:96px}
 body.read .card{max-width:none}
@@ -193,8 +212,8 @@ body.read .hint{display:none}
   .kicker{margin-bottom:10px}
   .card h2{font-size:40px}
   .body{margin-top:14px;font-size:16.5px}
-  .stop:not(.intro):not(.end) .card:not(.open) .body{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden}
-  .stop:not(.intro):not(.end) .card:not(.open) .x-more{display:none}
+  body:not(.read) .stop:not(.intro):not(.end) .card:not(.open) .body{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden}
+  body:not(.read) .stop:not(.intro):not(.end) .card:not(.open) .x-more{display:none}
   .more-btn{display:inline-flex;align-items:center;gap:8px;margin-top:10px;padding:6px 0;background:none;border:0;font:500 12.5px/1 var(--ui);letter-spacing:.04em;color:var(--gold);cursor:pointer}
   .more-btn::after{content:'';width:5px;height:5px;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;transform:translateY(-2px) rotate(45deg);transition:transform .25s}
   .card.open .more-btn::after{transform:translateY(1px) rotate(-135deg)}
@@ -204,6 +223,7 @@ body.read .hint{display:none}
   .intro .body p:nth-of-type(2){display:none}
   .stories-here,.meta,#stories,.legend{margin-top:20px}
   .site-foot{grid-template-columns:1fr;gap:28px;padding:44px 22px 28px}
+  .contents ol{columns:1}
   body.read .card{background:none;border:0;backdrop-filter:none;-webkit-backdrop-filter:none;padding:0}
   body.read .card .body{display:block}
   body.read .card .x-more{display:block}
@@ -229,8 +249,14 @@ body.read .hint{display:none}
 <nav class="map" id="map" aria-label="The fourteen worlds"></nav>
 <main id="story"></main>
 <footer class="site-foot">
-  <div><span class="logo">LOKA</span><p>An explorable universe of Hindu mythology, drawn from the Puranas and the epics. This is an early preview.</p></div>
-  <div><div class="label">Texts</div><ul><li>Vishnu Purana</li><li>Bhagavata Purana</li><li>Mahabharata</li><li>Valmiki Ramayana</li></ul></div>
+  <div><span class="logo">LOKA</span><p>An explorable universe of Hindu mythology, drawn from the Puranas and the epics. This is an early preview.</p><p class="by">Created by Aarya Rajgor</p></div>
+  <div><div class="label">Texts</div><ul>
+    <li><a href="https://sacred-texts.com/book/the-vishnu-purana" target="_blank" rel="noopener">Vishnu Purana</a><small>H. H. Wilson’s translation</small></li>
+    <li><a href="https://vedabase.io/en/library/sb/" target="_blank" rel="noopener">Bhagavata Purana</a><small>Bhaktivedanta Book Trust translation</small></li>
+    <li><a href="https://sacred-texts.com/categories/mahabharata" target="_blank" rel="noopener">Mahabharata</a><small>K. M. Ganguli’s translation</small></li>
+    <li><a href="https://sacred-texts.com/book/ramayan-of-valmiki" target="_blank" rel="noopener">Valmiki Ramayana</a><small>R. T. H. Griffith’s translation</small></li>
+    <li><a href="https://vedabase.io/en/library/bg/" target="_blank" rel="noopener">Bhagavad Gita</a><small>Bhaktivedanta Book Trust translation</small></li>
+  </ul></div>
   <div><div class="label">Imagery</div><ul>
     <li>Night sky: <a href="https://svs.gsfc.nasa.gov/4851" target="_blank" rel="noopener">Deep Star Maps 2020</a>, NASA/Goddard Scientific Visualization Studio</li>
     <li>Land and rock textures: <a href="https://polyhaven.com" target="_blank" rel="noopener">Poly Haven</a>, CC0</li>
@@ -238,7 +264,7 @@ body.read .hint{display:none}
     <li>Shesha’s heads: <a href="https://sketchfab.com/3d-models/king-cobra-a8dab84cd4fc428bbcfe194e3ac14d06" target="_blank" rel="noopener">“King Cobra”</a> by Anthony Yanez, <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>, cut and retinted</li>
     <li>Rendering: <a href="https://threejs.org" target="_blank" rel="noopener">three.js</a>, MIT</li>
   </ul></div>
-  <div class="sf-base">© 2026 Loka</div>
+  <div class="sf-base">© 2026 Aarya Rajgor</div>
 </footer>
 
 <aside class="dial" id="dial" aria-label="Time dial: the four ages">
@@ -417,10 +443,54 @@ const STOPS = [
     src:'Vishnu Purana 1.3' },
 ];
 
+// Read mode only: a guide to the map, and a deeper note for each world
+const DEEP = {
+  intro:`<h3>Where the fourteen worlds come from</h3>
+    <p>The oldest Vedic hymns speak of three worlds: the earth, the sky, and heaven above it. Their names, <i>bhuh</i>, <i>bhuvah</i> and <i>svah</i>, open the Gayatri mantra, which many Hindus still recite every day. Later Vedic texts add four more names above them, <i>mahah</i>, <i>janah</i>, <i>tapah</i> and <i>satyam</i>, and the Puranas set seven more worlds beneath the earth. Together they make fourteen, sealed inside the <i>Brahmanda</i>, the egg of Brahma.</p>
+    <p>The Puranas are long Sanskrit works of cosmology, genealogy and story, compiled over many centuries in the first millennium CE. This map follows two of them most closely: the Vishnu Purana (book 2) for the overall shape, and the Bhagavata Purana (book 5) for the lower worlds and the serpent beneath them.</p>
+    <h3>How to read it</h3>
+    <p>The texts measure everything in <i>yojanas</i> and describe each world in detail, but they don’t always agree with each other, and many traditions read the whole picture symbolically, as levels of being rather than places. Where the texts differ, this map follows one and says so in a Versions note.</p>
+    <p>Two things surprise most readers. The worlds below the earth are not hells: they’re described as richer and lovelier than heaven, and the hells are a separate place. And nothing here lasts forever: at the end of each day of Brahma, the three nearest worlds, earth, sky and heaven, burn and are made again.</p>
+    <h3>What’s from the texts, and what’s drawn</h3>
+    <p>The names, the order, the egg, Mount Meru wider at its summit than its base, the seven ring-shaped oceans and Ananta Shesha holding it all up come from the texts. The look of each world as a glowing galaxy, the glass of the egg, the colors and the spacing are this map’s own. The real proportions are far too vast to draw.</p>`,
+  satya:`<p>Also called Brahmaloka, this is the seat of Brahma, the creator, at the top of the egg. The Vishnu Purana places it high above Dhruva, beyond Mahar, Jana and Tapa, and says those who reach it never again know death.</p>
+    <p>Many traditions add that when Brahma’s life of a hundred years comes to an end, those who live here are freed along with him instead of being born again.</p>`,
+  tapa:`<p><i>Tapas</i> means heat, and the inner heat of austerity: the discipline that, in these stories, gives sages and even gods their power. The Vairaja gods who live here are beyond the reach of the fire that ends each day of Brahma.</p>`,
+  jana:`<p><i>Jana</i> means people, or beings. The best-known residents are the four Kumaras, Sanaka, Sanandana, Sanatana and Sanatkumara: sons born from Brahma’s mind who chose to stay children forever, given to study and meditation.</p>
+    <p>Their visit to Vaikuntha, Vishnu’s own realm, sets off one of the longest arcs in the Puranas. The doorkeepers Jaya and Vijaya turn them away, the Kumaras curse them to be born on earth, and the two return three times as Vishnu’s enemies, first as Hiranyaksha and Hiranyakashipu.</p>`,
+  mahar:`<p><i>Mahar</i> means great. When the fire that ends a day of Brahma consumes the three worlds below, its heat reaches up here, and the residents withdraw to Janaloka until the next day begins.</p>`,
+  svar:`<p>Svarga is the heaven of Indra, king of the devas, with his city Amaravati, its gardens and its celestial dancers. It is a reward, not a final home: the Bhagavad Gita (9.21) says that when the merit that earned it is spent, the soul returns to the world of mortals.</p>
+    <p>At its top shines Dhruva. As a boy of five, slighted by his stepmother, he went into the forest to find Vishnu and meditated until Vishnu appeared to him. His reward was the one fixed point the whole sky turns around.</p>`,
+  bhuvar:`<p><i>Bhuvah</i>, the second of the three Vedic worlds, is the open sky between the earth and the sun: the realm of wind and cloud, and the road of siddhas, sages and other celestial travelers. The sun marks its upper edge.</p>`,
+  bhu:`<p>Bhu-mandala, the earth disc, is far larger than the world we know. At its center stands Mount Meru, which the Vishnu Purana describes as 84,000 yojanas high and wider at its summit than at its base, like the seed-cup of a lotus.</p>
+    <p>Around Meru, rings of land and ocean alternate outward: seven continents, each circled by an ocean of a different liquid, and each continent twice as wide as the one inside it. Past the last ocean lies a land of gold, then the Lokaloka mountains, where the sun’s light stops. Beyond them is darkness, and then the shell of the egg.</p>`,
+  bharata:`<p>Bharata, or Bharatavarsha, is the southern region of Jambudvipa, the innermost continent: the land between the ocean and the Himalaya, named for an ancient king called Bharata.</p>
+    <p>The Vishnu Purana calls it <i>karma-bhumi</i>, the land of action. In the other regions beings only enjoy or suffer what their past deeds have earned; here, actions bear new fruit. That is why, the text says, even the gods sing the praises of those born here.</p>`,
+  atala:`<p><i>Tala</i> means level, and the seven lower worlds are stacked one beneath another. The Bhagavata describes them as full of palaces, gardens and jewels, free of old age and illness, and lit not by the sun but by the gems of the serpents.</p>
+    <p>Atala’s ruler, Bala, is a son of the asura architect Maya, and a master of illusion.</p>`,
+  vitala:`<p>Here Shiva lives as Hatakeshvara, lord of gold, with his consort Bhavani. The river Hataki that flows through this world gives its name to <i>hataka</i>, the gold the rulers of the lower worlds prize above all else.</p>`,
+  sutala:`<p>Bali was the grandson of Prahlada, the devoted boy at the heart of the Narasimha story. Through generosity and strength he won the three worlds from Indra. Vishnu came to him as Vamana, a dwarf, and asked for three steps of land; then he grew to cosmic size and covered earth and heaven in two strides.</p>
+    <p>Bali offered his own head for the third. Vishnu rewarded his honesty with this kingdom, richer than heaven, and the promise that Bali would one day be Indra himself (Bhagavata Purana 8.18–8.23).</p>`,
+  talatala:`<p>Maya was the great architect of the asuras. He built Tripura, three flying cities of gold, silver and iron, and Shiva destroyed them with a single arrow when they came into line. Even so, the Bhagavata says Shiva protects Maya here. In the Mahabharata, Maya also builds the Pandavas’ great assembly hall.</p>`,
+  mahatala:`<p>The serpents here are the sons of Kadru, among them Takshaka and Kaliya. Their fear of Garuda goes back to a wager between Kadru and her sister Vinata, Garuda’s mother, which left Vinata enslaved. Garuda won her freedom by stealing the nectar of immortality from the gods (Mahabharata, book 1).</p>`,
+  rasatala:`<p>Rasatala holds the Daityas and Danavas, sons of Diti and Danu, who are half-brothers and old rivals of the devas. The Panis among them are as old as the Rig Veda, where they hide stolen cows that Sarama, Indra’s hound, tracks down.</p>
+    <p>The Nivatakavachas return in the Mahabharata, when Arjuna defeats them during his years in Indra’s heaven.</p>`,
+  patala:`<p>Patala is also called Nagaloka, the world of the nagas: serpent beings who can take human form. Its lords include Vasuki, who served as the rope when the devas and asuras churned the ocean of milk.</p>
+    <p>In the Vishnu Purana, the sage Narada returns from Patala and declares it more beautiful than heaven, bright with the jewels on the serpents’ hoods.</p>`,
+  shesha:`<p><i>Ananta</i> means endless, and <i>Shesha</i> means what remains: when the worlds dissolve, the serpent is what is left. He lies below Patala, and in the Bhagavata the whole universe rests on one of his thousand hoods like a mustard seed. The Vishnu Purana adds that when he yawns, the earth shakes.</p>
+    <p>Between creations, Vishnu sleeps on his coils on the cosmic ocean. Many traditions also say Shesha came to earth twice: as Lakshmana, Rama’s brother, and as Balarama, Krishna’s.</p>`,
+  end:`<p>Time in the Puranas runs in cycles. The four ages, from Satya down to Kali, make one great age of 4.32 million years. A thousand great ages make a single day of Brahma, a <i>kalpa</i>, and his night lasts as long. At nightfall the three worlds dissolve, and at dawn they are made again.</p>
+    <p>Brahma lives a hundred years of such days and nights. When his life ends, the whole egg dissolves back into its source, and in time a new one forms.</p>`,
+};
+
 /* ------------------------------------------------------------------ */
 /* DOM                                                                */
 /* ------------------------------------------------------------------ */
 const storyEl = document.getElementById('story');
+// read mode's contents: every stop after the opening, grouped like the rail
+const CONTENTS = (()=>{ const G={up:'Upper worlds',earth:'Earth',low:'Lower worlds',base:'Beneath',z:'And then'}; let prev=null, h='';
+  STOPS.slice(1).forEach(s=>{ if(s.grp!==prev && G[s.grp]) h+=`<li class="g">${G[s.grp]}</li>`; prev=s.grp; h+=`<li><a href="#s-${s.id}">${s.rail||s.nav}</a></li>`; });
+  return `<nav class="contents" aria-label="Contents"><div class="label">Contents</div><ol>${h}</ol></nav>`; })();
 // a story told in this world: a link once it's written, a quiet "coming soon" until then
 function linkHTML(l){
   if(l.href) return `<li><a class="story" href="${l.href}"><span class="story-t">${l.label}</span><span class="story-m">${l.note||'Read'} →</span></a></li>`;
@@ -440,6 +510,7 @@ STOPS.forEach(s=>{
     <div class="body">${s.body}</div>
     ${world?`<button class="more-btn" aria-expanded="false">Read more</button>`:''}
     <div class="x-more">
+      ${DEEP[s.id]?`<div class="deep">${s.id==='intro'?'':'<div class="label">In depth</div>'}${DEEP[s.id]}${s.id==='intro'?CONTENTS:''}</div>`:''}
       ${s.extra||''}
       ${s.links?`<div class="stories-here"><div class="label">Stories here</div><ul>${s.links.map(linkHTML).join('')}</ul></div>`:''}
       ${s.src||s.versions?`<div class="meta">${s.src?`<p class="src"><b>Sources</b>${s.src}</p>`:''}${s.versions?`<details class="versions"><summary><b>Versions</b>The texts differ here</summary><p>${s.versions}</p></details>`:''}</div>`:''}

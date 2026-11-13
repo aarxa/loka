@@ -2,6 +2,8 @@
 
 An explorable universe of Hindu mythology. You travel through a 3D cosmos of the fourteen worlds of the Puranas, and each world opens into sourced, scroll-driven stories.
 
+Created by Aarya Rajgor.
+
 *Loka is a working title. This is an early prototype.*
 
 ## Run it
@@ -37,6 +39,7 @@ In progress on their own branches:
 
 ## Credits
 
+- **Texts:** read online in [H. H. Wilson’s Vishnu Purana](https://sacred-texts.com/book/the-vishnu-purana), the [Bhagavata Purana](https://vedabase.io/en/library/sb/) and [Bhagavad Gita](https://vedabase.io/en/library/bg/) (Bhaktivedanta Book Trust), [K. M. Ganguli’s Mahabharata](https://sacred-texts.com/categories/mahabharata) and [R. T. H. Griffith’s Ramayana](https://sacred-texts.com/book/ramayan-of-valmiki).
 - **Sky:** [Deep Star Maps 2020](https://svs.gsfc.nasa.gov/4851), NASA/Goddard Scientific Visualization Studio (from Hipparcos-2, Tycho-2 and Gaia DR2).
 - **Land and rock textures:** [aerial_grass_rock](https://polyhaven.com/a/aerial_grass_rock) and [cliff_side](https://polyhaven.com/a/cliff_side), Poly Haven, CC0.
 - **Water normals:** [three.js](https://github.com/mrdoob/three.js) example texture, MIT.
@@ -52,4 +55,4 @@ The original downloads are left out to keep the repo small. Fetch them again fro
 
 ## License
 
-No license has been chosen yet, so all rights are reserved. The third-party assets above keep their own licenses.
+No license has been chosen yet, so all rights are reserved by Aarya Rajgor. The third-party assets above keep their own licenses.
