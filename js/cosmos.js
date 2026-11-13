@@ -422,8 +422,9 @@ let sheshaTick=null;
       : new THREE.MeshPhysicalMaterial({ ...o, clearcoat:.32, clearcoatRoughness:.24, iridescence:.2, iridescenceIOR:1.3, iridescenceThicknessRange:[220,420],
           sheen:.16, sheenRoughness:.6, sheenColor:new THREE.Color('#f3e6cf') });
     m.onBeforeCompile=sh=>{
-      sh.vertexShader=sh.vertexShader.replace('#include <common>','#include <common>\nattribute float ao, belly, along;\nvarying float vAo, vBelly, vAlong;')
-        .replace('#include <begin_vertex>','#include <begin_vertex>\nvAo=ao; vBelly=belly; vAlong=along;');
+      if(coil) sh.uniforms.uTime=DU.time;
+      sh.vertexShader=sh.vertexShader.replace('#include <common>','#include <common>\nattribute float ao, belly, along;\nvarying float vAo, vBelly, vAlong;'+(coil?'\nattribute vec3 lat; attribute float wav; uniform float uTime;':''))
+        .replace('#include <begin_vertex>','#include <begin_vertex>\nvAo=ao; vBelly=belly; vAlong=along;'+(coil?'\ntransformed+=lat*sin(along*1.15-uTime*1.3)*wav;':''));
       sh.fragmentShader=sh.fragmentShader.replace('#include <common>','#include <common>\nvarying float vAo, vBelly, vAlong;')
         .replace('#include <map_fragment>',`#include <map_fragment>
         ${coil?`{ float f=fract(vAlong*${SCUTES}.0), seam=smoothstep(0.0,0.14,f)*(1.0-smoothstep(0.84,1.0,f));
@@ -439,39 +440,44 @@ let sheshaTick=null;
   const frontMat=skin(NT.skinA,NT.norA,'#d8cfbe',{side:THREE.DoubleSide,bump:.45}), backMat=skin(NT.skinB,NT.norB,'#a8987f',{side:THREE.DoubleSide,bump:.8}),
         headMat=skin(NT.skinB,NT.norB,'#c7bba6',{side:THREE.DoubleSide,bump:.8});
 
-  // the body: up the axis from the neck, then spiralling outward and down
-  const TOP=base+13, HS=1.3, cp=[new THREE.Vector3(0,TOP,0),new THREE.Vector3(0,TOP-4.5,0),new THREE.Vector3(3,base+4.2,1.8)];
+  // the body: it rises a little at the cosmic axis, where it splits into the seven necks, then spirals outward and down
+  const TOP=base+13, HS=1.3, TRUNK=base+5.5, cp=[new THREE.Vector3(0,TRUNK,0),new THREE.Vector3(0,TRUNK-2.4,0),new THREE.Vector3(3,base+2.6,1.8)];
   for(let i=0;i<=240;i++){ const u=i/240, a=.65+u*Math.PI*2*3.1, r=12+u*24;
     cp.push(new THREE.Vector3(Math.cos(a)*r, base+2.2-u*9+Math.pow(Math.max(0,u-.93)/.07,2)*2.2, Math.sin(a)*r)); }
   const curve=new THREE.CatmullRomCurve3(cp,false,'centripetal'), LEN=curve.getLength();
-  const radiusAt=s=>{ const cap=3, R0=5.6, neck=16, R1=4; if(s<cap) return R0*Math.sqrt(Math.max(0,1-((cap-s)/cap)**2));
+  const radiusAt=s=>{ const cap=3, R0=4.8, neck=14, R1=4; if(s<cap) return R0*Math.sqrt(Math.max(0,1-((cap-s)/cap)**2));
     if(s<neck) return R0+(R1-R0)*(s-cap)/(neck-cap);
     const u=(s-neck)/(LEN-neck); return u<.86 ? R1-(R1-2.2)*u/.86 : 2.2*Math.pow(Math.max(0,1-(u-.86)/.14),.7)+.06; };
   // a slightly flattened body, flatter still underneath, with its belly turned down on the coils and toward the viewer
   // where the body rears up (as a cobra's does)
-  function coilGeometry(segs,radial,kTex){
+  function tubeGeometry(curve,LEN,radiusAt,segs,radial,kTex,{contact=true,aoAt=null,wavAt=()=>0}={}){
     const P=new THREE.Vector3(), T=new THREE.Vector3(), D=new THREE.Vector3(), U=new THREE.Vector3(), W=new THREE.Vector3(), N=new THREE.Vector3(), DOWN=new THREE.Vector3(0,-1,0);
-    const n=(segs+1)*(radial+1), pos=new Float32Array(n*3), nor=new Float32Array(n*3), uv=new Float32Array(n*2), alg=new Float32Array(n), bel=new Float32Array(n), idx=[];
+    const n=(segs+1)*(radial+1), pos=new Float32Array(n*3), nor=new Float32Array(n*3), uv=new Float32Array(n*2), alg=new Float32Array(n), bel=new Float32Array(n), lat=new Float32Array(n*3), wav=new Float32Array(n), idx=[];
     const spine=[]; let along=0, prev=0;
     for(let i=0;i<=segs;i++){ const t=i/segs, s=t*LEN, r=radiusAt(s); along+=(s-prev)/(2*Math.PI*Math.max(r,1.2)); prev=s;
       curve.getPointAt(t,P); curve.getTangentAt(t,T); spine.push([P.x,P.y,P.z,r,s]);
       D.copy(DOWN).lerp(F,THREE.MathUtils.smoothstep(Math.abs(T.y),.55,.9)).normalize();
-      U.copy(D).addScaledVector(T,-D.dot(T)).normalize().negate(); W.crossVectors(T,U).normalize();
+      U.copy(D).addScaledVector(T,-D.dot(T)).normalize().negate(); W.crossVectors(T,U).normalize(); const wv=wavAt(t,s);
       for(let j=0;j<=radial;j++){ const v=j/radial*Math.PI*2, cx=Math.cos(v), sy=Math.sin(v), o=i*(radial+1)+j;
         const w=r*1.1, h=r*(sy<0?.8:.92);
         pos[o*3]=P.x+W.x*cx*w+U.x*sy*h; pos[o*3+1]=P.y+W.y*cx*w+U.y*sy*h; pos[o*3+2]=P.z+W.z*cx*w+U.z*sy*h;
         N.copy(W).multiplyScalar(cx/w).addScaledVector(U,sy/h).normalize(); nor[o*3]=N.x; nor[o*3+1]=N.y; nor[o*3+2]=N.z;
-        uv[o*2]=j/radial*2; uv[o*2+1]=along*kTex; alg[o]=along; bel[o]=THREE.MathUtils.smoothstep(-sy,.5,.88); } }
+        uv[o*2]=j/radial*2; uv[o*2+1]=along*kTex; alg[o]=along; bel[o]=THREE.MathUtils.smoothstep(-sy,.5,.88);
+        lat[o*3]=W.x; lat[o*3+1]=W.y; lat[o*3+2]=W.z; wav[o]=wv; } }
     for(let i=0;i<segs;i++) for(let j=0;j<radial;j++){ const a=i*(radial+1)+j, b=a+radial+1; idx.push(a,b,a+1, b,b+1,a+1); }
     // contact shadow: darken skin that sits close to another stretch of the body (one turn resting on the next)
     const ao=new Float32Array(n), M=spine.filter((_,i)=>i%2===0);
-    for(let o=0;o<n;o++){ const i=Math.floor(o/(radial+1)), si=spine[i][4], ri=spine[i][3], x=pos[o*3], y=pos[o*3+1], z=pos[o*3+2]; let gap=1e9;
+    if(!contact) for(let o=0;o<n;o++) ao[o]=aoAt(Math.floor(o/(radial+1))/segs);
+    else for(let o=0;o<n;o++){ const i=Math.floor(o/(radial+1)), si=spine[i][4], ri=spine[i][3], x=pos[o*3], y=pos[o*3+1], z=pos[o*3+2]; let gap=1e9;
       for(const c of M){ if(Math.abs(c[4]-si)<ri*3+5) continue; const dx=x-c[0], dy=y-c[1], dz=z-c[2], g=Math.sqrt(dx*dx+dy*dy+dz*dz)-c[3]*1.05; if(g<gap) gap=g; }
       ao[o]=.32+.68*THREE.MathUtils.smoothstep(gap,0,4.5)*(1-.25*bel[o]); }
     const g=new THREE.BufferGeometry(); g.setAttribute('position',new THREE.BufferAttribute(pos,3)); g.setAttribute('normal',new THREE.BufferAttribute(nor,3));
     g.setAttribute('uv',new THREE.BufferAttribute(uv,2)); g.setAttribute('along',new THREE.BufferAttribute(alg,1)); g.setAttribute('belly',new THREE.BufferAttribute(bel,1));
-    g.setAttribute('ao',new THREE.BufferAttribute(ao,1)); g.setIndex(idx); return g; }
-  const coil=new THREE.Mesh(coilGeometry(lowTier?600:1100,lowTier?16:28,2.2),coilMat); coil.castShadow=coil.receiveShadow=true; scene.add(coil);
+    g.setAttribute('ao',new THREE.BufferAttribute(ao,1)); g.setAttribute('lat',new THREE.BufferAttribute(lat,3)); g.setAttribute('wav',new THREE.BufferAttribute(wav,1));
+    g.setIndex(idx); return g; }
+  // the wave stays out of the rising trunk, where the necks join, and grows toward the tail so its tip curls
+  const coil=new THREE.Mesh(tubeGeometry(curve,LEN,radiusAt,lowTier?600:1100,lowTier?16:28,2.2,
+    {wavAt:(t,s)=>THREE.MathUtils.smoothstep(s,24,60)*(.12+1.3*THREE.MathUtils.smoothstep(t,.82,1))}),coilMat); coil.castShadow=coil.receiveShadow=true; scene.add(coil);
   const sp=[],sc=[]; const A=new THREE.Color('#fff1d8'),B=new THREE.Color('#ffffff'), P=new THREE.Vector3();
   for(let i=0;i<500;i++){ const t=Math.random(), r=radiusAt(t*LEN)+1.6; curve.getPointAt(t,P); sp.push(P.x+rnd(-r,r),P.y+rnd(-r,r),P.z+rnd(-r,r)); const c=A.clone().lerp(B,Math.random()); sc.push(c.r,c.g,c.b); }
   scene.add(makePoints(sp,sc,.35,.16));
@@ -506,11 +512,21 @@ let sheshaTick=null;
       const gem=new THREE.Mesh(gemGeo,gemMat); gem.position.set(jf[0],jf[1],jf[2]+.25); gem.scale.set(.9,1.2,.55); inner.add(gem);
       inner.add(makePoints([jf[0],jf[1],jf[2]+.6],[1.8,.14,.1],2.2,.35));
       outer.add(inner);
-      outer.position.set(0,TOP-(3.4+ak*.6)*HS,0).addScaledVector(side,k*.65*HS).addScaledVector(F,(.6-ak*1.1)*HS);
-      const rx=ak*.05, rz=-k*.34; outer.rotation.set(rx,camA+k*.09,rz,'YXZ'); outer.scale.setScalar(HS*(1-ak*.06));
+      outer.position.set(0,TOP-(3.0+ak*.85)*HS,0).addScaledVector(side,k*1.2*HS).addScaledVector(F,(.6-ak*1.1)*HS);
+      const rx=ak*.05, rz=-k*.27; outer.rotation.set(rx,camA+k*.09,rz,'YXZ'); outer.scale.setScalar(HS*(1-ak*.06));
       scene.add(outer); heads.push({o:outer,rx,rz,ph:k*1.7});
     }
-    sheshaTick=t=>heads.forEach(h=>{ h.o.rotation.z=h.rz+Math.sin(t*.55+h.ph)*.018; h.o.rotation.x=h.rx+Math.sin(t*.4+h.ph*1.3)*.015; });
+    // the body splits into the seven necks: a smooth root runs from inside the trunk up into each cobra neck,
+    // in the same skin as the coils, darker low down where the necks press together
+    heads.forEach((h,i)=>{ const k=i-3, ak=Math.abs(k); h.o.updateMatrixWorld(true); const inner=h.o.children[0];
+      const E=inner.localToWorld(new THREE.Vector3(0,3.2,0)), dir=inner.localToWorld(new THREE.Vector3(0,5.2,0)).sub(E).normalize();
+      const S0=new THREE.Vector3(0,base+.8,0).addScaledVector(side,k*.5).addScaledVector(F,.7-ak*.45);
+      const rc=new THREE.CatmullRomCurve3([S0,S0.clone().add(new THREE.Vector3(0,2.2,0)),E.clone().addScaledVector(dir,-2.6),E],false,'centripetal'), L=rc.getLength();
+      const rN=2.35*h.o.scale.x;   // just wide enough to cover the cut edge of the cobra's neck
+      const root=new THREE.Mesh(tubeGeometry(rc,L,s=>rN*(1+.1*(1-s/L)),40,lowTier?14:22,2.2,{contact:false,aoAt:u=>.32+.5*THREE.MathUtils.smoothstep(u,.0,.7)}),coilMat);
+      root.castShadow=root.receiveShadow=true; scene.add(root); });
+    // and the heads sway, each in its own slow rhythm
+    sheshaTick=t=>heads.forEach(h=>{ h.o.rotation.z=h.rz+Math.sin(t*.42+h.ph)*.032; h.o.rotation.x=h.rx+Math.sin(t*.31+h.ph*1.3)*.026; });
   }).catch(e=>console.error('shesha model',e));
 }
 
