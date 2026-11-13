@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Shesha sculpt · Loka lab</title>
+<link rel="stylesheet" href="../css/fonts.css">
+<style>
+  :root{--bg:#07060c;--ink:#f1eadb;--muted:#9b917f;--gold:#e3b964;--rule:rgba(239,231,214,.14)}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font:400 14px/1.5 Inter,system-ui,sans-serif;overflow:hidden}
+  canvas{display:block}
+  .bar{position:fixed;left:20px;top:18px;right:20px;display:flex;align-items:center;justify-content:space-between;gap:12px;pointer-events:none}
+  .bar>*{pointer-events:auto}
+  h1{margin:0;font:500 22px/1.1 'Cormorant Garamond',serif;letter-spacing:.02em}
+  h1 small{display:block;font:500 10.5px/1.6 Inter,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:var(--gold)}
+  .btns{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+  button,a.b{background:rgba(7,6,12,.6);border:1px solid var(--rule);border-radius:99px;color:var(--ink);padding:7px 13px;font:500 12px/1 Inter,sans-serif;cursor:pointer;text-decoration:none}
+  button[aria-pressed="true"]{background:var(--gold);color:#140f05;border-color:var(--gold)}
+  .note{position:fixed;left:20px;bottom:16px;max-width:520px;color:var(--muted);font-size:12px}
+</style>
+</head>
+<body>
+<div class="bar">
+  <h1><small>Loka lab · preview</small>Ananta Shesha, sculpted in code</h1>
+  <div class="btns"><button id="front">Front view</button><button id="spin" aria-pressed="true">Turn</button><button id="wire" aria-pressed="false">Wireframe</button><a class="b" href="../index.html#s-shesha">On the site now</a></div>
+</div>
+<p class="note">Drag to orbit, scroll to zoom. One continuous surface for the body, the seven necks and the hoods; the scales are drawn in the shader.</p>
+<script type="importmap">{"imports":{"three":"../vendor/three/three.module.min.js","three/addons/":"../vendor/three/addons/"}}</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+
+const renderer=new THREE.WebGLRenderer({antialias:true}); renderer.setPixelRatio(Math.min(devicePixelRatio,2)); renderer.setSize(innerWidth,innerHeight);
+renderer.toneMapping=THREE.ACESFilmicToneMapping; renderer.toneMappingExposure=1.05; renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+document.body.prepend(renderer.domElement);
+const scene=new THREE.Scene(); scene.background=new THREE.Color('#07060c');
+const env=new THREE.PMREMGenerator(renderer).fromScene(new RoomEnvironment(renderer),.04).texture;
+const camera=new THREE.PerspectiveCamera(38,innerWidth/innerHeight,.5,800); camera.position.set(0,26,86);
+const controls=new OrbitControls(camera,renderer.domElement); controls.target.set(0,9,0); controls.enableDamping=true; controls.autoRotate=true; controls.autoRotateSpeed=.6;
+
+// light: the same idea as the site's Shesha stop (a warm key from the side that casts shadows, a cool rim, soft fill)
+scene.add(new THREE.AmbientLight(0xffffff,.42));
+const key=new THREE.SpotLight(0xffeed4,2.2,0,.6,.55,0); key.position.set(88,100,22); key.target.position.set(0,8,0); scene.add(key,key.target);
+key.castShadow=true; key.shadow.mapSize.set(2048,2048); key.shadow.camera.near=60; key.shadow.camera.far=240; key.shadow.bias=-.0003; key.shadow.normalBias=.05;
+const rim=new THREE.PointLight(0xaec6ff,900,180,1.6); rim.position.set(0,38,-58); scene.add(rim);
+const fill=new THREE.PointLight(0xffe6c8,260,160,1.6); fill.position.set(-40,30,60); scene.add(fill);
+
+const loadTex=(src,srgb)=>{ const t=new THREE.TextureLoader().load(src); t.wrapS=t.wrapT=THREE.RepeatWrapping; t.colorSpace=srgb?THREE.SRGBColorSpace:THREE.NoColorSpace; t.anisotropy=8; return t; };
+const scaleN=loadTex('../assets/tex/naga_nor_a.jpg',false), scaleA=loadTex('../assets/tex/naga_skin_a.jpg',true);
+
+// skin: triplanar scales (the sculpt has no UVs), ivory with soft markings, a light glossy coat
+function skin(color,{scale=.15,bump=.9}={}){
+  const m=new THREE.MeshPhysicalMaterial({color,roughness:.38,metalness:0,envMap:env,envMapIntensity:.32,clearcoat:.3,clearcoatRoughness:.25,sheen:.15,sheenRoughness:.6,sheenColor:new THREE.Color('#f3e6cf')});
+  m.onBeforeCompile=sh=>{
+    Object.assign(sh.uniforms,{scaleN:{value:scaleN},scaleA:{value:scaleA},uScale:{value:scale},uBump:{value:bump}});
+    sh.vertexShader=sh.vertexShader.replace('#include <common>','#include <common>\nvarying vec3 vWPos, vWNor;')
+      .replace('#include <begin_vertex>','#include <begin_vertex>\nvWPos=(modelMatrix*vec4(transformed,1.0)).xyz; vWNor=normalize(mat3(modelMatrix)*objectNormal);');
+    sh.fragmentShader=sh.fragmentShader.replace('#include <common>',`#include <common>
+      varying vec3 vWPos, vWNor; uniform sampler2D scaleN, scaleA; uniform float uScale, uBump;
+      vec3 triW(vec3 n){ vec3 w=pow(abs(n),vec3(4.0)); return w/(w.x+w.y+w.z); }`)
+      .replace('#include <map_fragment>',`#include <map_fragment>
+      { vec3 n=normalize(vWNor), w=triW(n), p=vWPos*uScale;
+        vec3 a=texture2D(scaleA,p.zy).rgb*w.x+texture2D(scaleA,p.xz).rgb*w.y+texture2D(scaleA,p.xy).rgb*w.z;
+        diffuseColor.rgb*=mix(vec3(1.0),a*1.12,0.85); }`)
+      .replace('#include <normal_fragment_maps>',`#include <normal_fragment_maps>
+      { vec3 n=normalize(vWNor), w=triW(n), p=vWPos*uScale;
+        vec3 tx=texture2D(scaleN,p.zy).xyz*2.0-1.0, ty=texture2D(scaleN,p.xz).xyz*2.0-1.0, tz=texture2D(scaleN,p.xy).xyz*2.0-1.0;
+        tx=vec3(tx.xy*uBump+n.zy,abs(tx.z)*n.x); ty=vec3(ty.xy*uBump+n.xz,abs(ty.z)*n.y); tz=vec3(tz.xy*uBump+n.xy,abs(tz.z)*n.z);
+        vec3 nw=normalize(tx.zyx*w.x+ty.xzy*w.y+tz.xyz*w.z);
+        normal=normalize((viewMatrix*vec4(nw,0.0)).xyz); }`);
+  };
+  return m;
+}
+const bodyMat=skin('#d9cfbd',{scale:.13,bump:1.0}), hoodMat=skin('#ddd3c2',{scale:.16,bump:.75});
+
+// eyes: gold, with a slit pupil, under a wet gloss
+const eyeTex=(()=>{ const c=document.createElement('canvas'); c.width=256; c.height=128; const g=c.getContext('2d');
+  g.fillStyle='#2a1a06'; g.fillRect(0,0,256,128);
+  const r=g.createRadialGradient(64,64,4,64,64,46); r.addColorStop(0,'#ffe9a0'); r.addColorStop(.55,'#e0a52c'); r.addColorStop(1,'#5a3608'); g.fillStyle=r; g.beginPath(); g.ellipse(64,64,46,60,0,0,Math.PI*2); g.fill();
+  g.fillStyle='#050302'; g.beginPath(); g.ellipse(64,64,5,30,0,0,Math.PI*2); g.fill();
+  const t=new THREE.CanvasTexture(c); t.colorSpace=THREE.SRGBColorSpace; return t; })();
+const eyeMat=new THREE.MeshPhysicalMaterial({map:eyeTex,roughness:.15,clearcoat:1,clearcoatRoughness:.05,envMap:env,envMapIntensity:.8,emissive:new THREE.Color('#3a2404'),emissiveMap:eyeTex,emissiveIntensity:.6});
+const gemMat=new THREE.MeshPhysicalMaterial({color:'#7a0616',emissive:'#b00c22',emissiveIntensity:.6,roughness:.08,metalness:.1,clearcoat:1,envMap:env,envMapIntensity:1.4});
+
+async function loadMesh(url){
+  const buf=await (await fetch(url)).arrayBuffer(), h=new Uint32Array(buf,0,2), nv=h[0], ni=h[1];
+  const pos=new Float32Array(buf,8,nv*3), nor8=new Int8Array(buf,8+nv*12,nv*4), idx=new Uint32Array(buf,8+nv*16,ni);
+  const nor=new Float32Array(nv*3); for(let i=0;i<nv;i++){ nor[i*3]=nor8[i*4]/127; nor[i*3+1]=nor8[i*4+1]/127; nor[i*3+2]=nor8[i*4+2]/127; }
+  const g=new THREE.BufferGeometry(); g.setAttribute('position',new THREE.BufferAttribute(pos,3)); g.setAttribute('normal',new THREE.BufferAttribute(nor,3)); g.setIndex(new THREE.BufferAttribute(idx,1));
+  g.computeBoundingSphere(); return g;
+}
+const meta=await (await fetch('../assets/models/shesha_sculpt.json')).json();
+const [unitG,crownG]=await Promise.all([loadMesh('../assets/models/shesha_unit.bin'),loadMesh('../assets/models/shesha_crown.bin')]);
+const shesha=new THREE.Group(); scene.add(shesha);
+const crown=new THREE.Mesh(crownG,bodyMat); crown.castShadow=crown.receiveShadow=true; shesha.add(crown);
+const eyeG=new THREE.SphereGeometry(meta.eyeR,32,20), gemG=new THREE.OctahedronGeometry(.55,0);
+const heads=[];
+for(const u of meta.units){
+  const o=new THREE.Group(); const R=new THREE.Matrix4().set(u.R[0][0],u.R[0][1],u.R[0][2],0, u.R[1][0],u.R[1][1],u.R[1][2],0, u.R[2][0],u.R[2][1],u.R[2][2],0, 0,0,0,1);
+  o.quaternion.setFromRotationMatrix(R); o.position.fromArray(u.pos); o.scale.setScalar(u.s);
+  const m=new THREE.Mesh(unitG,hoodMat); m.castShadow=m.receiveShadow=true; o.add(m);
+  meta.eyes.forEach((e,i)=>{ const eye=new THREE.Mesh(eyeG,eyeMat); eye.position.fromArray(e);
+    // each eye looks out to its side and a little forward and down, like the head
+    eye.lookAt(new THREE.Vector3(...e).add(new THREE.Vector3(i?-0.75:0.75,-0.25,0.7))); eye.rotateY(-Math.PI/2); o.add(eye); });
+  const gem=new THREE.Mesh(gemG,gemMat); gem.position.fromArray(meta.gem); gem.position.z+=.2; gem.scale.set(.9,1.25,.55); o.add(gem);
+  shesha.add(o); heads.push({o,base:o.quaternion.clone(),ph:u.k*1.7});
+}
+// the coils below, for context: a simple spiral in the same skin
+{ const pts=[new THREE.Vector3(0,-3,0)]; for(let i=0;i<=200;i++){ const t=i/200, a=.65+t*Math.PI*2*3.1, r=12+t*24; pts.push(new THREE.Vector3(Math.cos(a)*r,2.2-t*9-3.5,Math.sin(a)*r)); }
+  const c=new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts,false,'centripetal'),900,3.8,28,false),bodyMat); c.castShadow=c.receiveShadow=true; shesha.add(c); }
+
+// controls
+const $=id=>document.getElementById(id);
+$('front').onclick=()=>{ controls.autoRotate=false; $('spin').setAttribute('aria-pressed','false'); camera.position.set(0,26,86); controls.target.set(0,9,0); };
+$('spin').onclick=e=>{ controls.autoRotate=!controls.autoRotate; e.target.setAttribute('aria-pressed',controls.autoRotate); };
+$('wire').onclick=e=>{ const on=e.target.getAttribute('aria-pressed')!=='true'; e.target.setAttribute('aria-pressed',on); bodyMat.wireframe=hoodMat.wireframe=on; };
+addEventListener('resize',()=>{ renderer.setSize(innerWidth,innerHeight); camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix(); });
+const q=new THREE.Quaternion(), ax=new THREE.Vector3(0,0,1);
+renderer.setAnimationLoop(t=>{ t/=1000;
+  heads.forEach(h=>{ q.setFromAxisAngle(ax,Math.sin(t*.42+h.ph)*.03); h.o.quaternion.copy(h.base).multiply(q); });   // the heads sway a little
+  controls.update(); renderer.render(scene,camera); });
+window.__ready=true;
+</script>
+</body>
+</html>
