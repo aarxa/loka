@@ -52,7 +52,7 @@ js = json.dumps(out, separators=(',', ':'))
 open(out_dir + '/shesha_hood.json', 'w').write(js)
 print('json bytes', len(js))
 
-# textures: python skin -> pale moon-white with a slate-blue pattern; normals kept as they are
+# textures: python skin -> warm ivory with soft taupe markings, like a pale cobra; normals kept as they are
 def retint(path, dst, lo, hi):
     im = np.asarray(Image.open(path).convert('RGB')).astype(np.float32) / 255.0
     L = im @ np.array([0.299, 0.587, 0.114], np.float32)
@@ -62,8 +62,8 @@ def retint(path, dst, lo, hi):
     rgb = np.array(lo, np.float32) * (1 - t[..., None]) + np.array(hi, np.float32) * t[..., None]
     Image.fromarray((np.clip(rgb, 0, 1) * 255 + 0.5).astype(np.uint8)).save(dst, quality=90)
 T = src + '/textures/'
-retint(T + '13_-_Default_baseColor.jpeg', tex_dir + '/naga_skin_a.jpg', (0.50, 0.56, 0.70), (0.97, 0.96, 0.93))
-retint(T + '08_-_Default_baseColor.jpeg', tex_dir + '/naga_skin_b.jpg', (0.44, 0.50, 0.64), (0.94, 0.94, 0.93))
+retint(T + '13_-_Default_baseColor.jpeg', tex_dir + '/naga_skin_a.jpg', (0.60, 0.54, 0.45), (0.98, 0.95, 0.89))
+retint(T + '08_-_Default_baseColor.jpeg', tex_dir + '/naga_skin_b.jpg', (0.50, 0.45, 0.38), (0.95, 0.92, 0.86))
 for s, d in (('13', 'naga_nor_a'), ('08', 'naga_nor_b')):
     Image.open(T + s + '_-_Default_normal.png').convert('RGB').save(tex_dir + '/' + d + '.jpg', quality=92)
 print('textures written')

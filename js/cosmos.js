@@ -40,7 +40,7 @@ const rnd=(a,b)=>a+Math.random()*(b-a);
 // lights
 const ambient=new THREE.AmbientLight(0xffffff,.55); scene.add(ambient);
 const sunLight=new THREE.DirectionalLight(0xfff0d8,1.8); scene.add(sunLight);
-const fill=new THREE.PointLight(0x88aaff,600,140,1.6); fill.position.set(0,-310,40); scene.add(fill);
+const fill=new THREE.PointLight(0xd6deff,320,140,1.6); fill.position.set(0,-310,40); scene.add(fill);
 
 // ---- the real sky: NASA SVS Deep Star Maps 2020 (Hipparcos-2, Tycho-2, Gaia DR2) ----
 const NOISE=`
@@ -407,19 +407,37 @@ loka(-5*S,50,{A:'#d6fff6',B:'#2dd4bf',C:'#00302b',arms:5,twist:2.2,speed:-.005,d
 loka(-6*S,50,{A:'#ffc4b4',B:'#e02a2a',C:'#220004',arms:2,twist:4.4,speed:-.004,dust:.95,core:.7,bright:.5,hole:.1,seed:16,gems:50});
 loka(-7*S,50,{A:'#e6f6ff',B:'#4cc9ff',C:'#24104e',arms:3,twist:3.0,speed:-.004,dust:.7,core:.6,bright:.6,hole:.08,seed:17,gems:520});
 
-// Ananta Shesha. The seven hooded heads are cut from "King Cobra" by Anthony Yanez (CC BY 4.0) and retinted to moon-white;
+// Ananta Shesha. The seven hooded heads are cut from "King Cobra" by Anthony Yanez (CC BY 4.0) and retinted to ivory;
 // the coils are generated: one body that rises at the cosmic axis and tapers, turn by turn, to the tip of the tail.
 let sheshaTick=null;
 { const base=-8.5*S;
+  const camA=STOPS.find(s=>s.id==='shesha').ang, F=new THREE.Vector3(Math.sin(camA),0,Math.cos(camA)), side=new THREE.Vector3(F.z,0,-F.x);
   const NT={ skinA:tex('naga_skin_a',true), skinB:tex('naga_skin_b',true), norA:tex('naga_nor_a',false), norB:tex('naga_nor_b',false) };
-  const skin=(map,nor,color,glow=.07,side=THREE.FrontSide,bump=1.2)=>{
-    const o={ color, map, normalMap:nor, normalScale:new THREE.Vector2(bump,bump), roughness:.4, metalness:.06, envMap:goldEnv, envMapIntensity:.3,
-              emissive:new THREE.Color('#2c4386'), emissiveMap:map, emissiveIntensity:glow, side };
-    return lowTier ? new THREE.MeshStandardMaterial(o)
-      : new THREE.MeshPhysicalMaterial({ ...o, clearcoat:.45, clearcoatRoughness:.3, iridescence:.7, iridescenceIOR:1.3, iridescenceThicknessRange:[160,480],
-          sheen:.3, sheenRoughness:.5, sheenColor:new THREE.Color('#cfe8ff') }); };
-  const coilMat=skin(NT.skinA,NT.norA,'#b6c0d6');
-  const frontMat=skin(NT.skinA,NT.norA,'#c4cce0',.07,THREE.DoubleSide,.4), backMat=skin(NT.skinB,NT.norB,'#7f8eb8',.05,THREE.DoubleSide,.8), headMat=skin(NT.skinB,NT.norB,'#b4bed6',.07,THREE.DoubleSide,.8);
+  const SCUTES=12;   // belly plates per body-circumference of length
+  // snake skin: ivory scales under a light glossy coat. Each geometry also carries per-vertex contact shadow (ao),
+  // how much it faces down (belly), and distance along the body (along), which the shader uses for the belly plates and banding.
+  const skin=(map,nor,color,{side:sd=THREE.FrontSide,bump=1.1,coil=false}={})=>{
+    const o={ color, map, normalMap:nor, normalScale:new THREE.Vector2(bump,bump), roughness:.36, metalness:0, envMap:goldEnv, envMapIntensity:.26, side:sd };
+    const m = lowTier ? new THREE.MeshStandardMaterial(o)
+      : new THREE.MeshPhysicalMaterial({ ...o, clearcoat:.32, clearcoatRoughness:.24, iridescence:.2, iridescenceIOR:1.3, iridescenceThicknessRange:[220,420],
+          sheen:.16, sheenRoughness:.6, sheenColor:new THREE.Color('#f3e6cf') });
+    m.onBeforeCompile=sh=>{
+      sh.vertexShader=sh.vertexShader.replace('#include <common>','#include <common>\nattribute float ao, belly, along;\nvarying float vAo, vBelly, vAlong;')
+        .replace('#include <begin_vertex>','#include <begin_vertex>\nvAo=ao; vBelly=belly; vAlong=along;');
+      sh.fragmentShader=sh.fragmentShader.replace('#include <common>','#include <common>\nvarying float vAo, vBelly, vAlong;')
+        .replace('#include <map_fragment>',`#include <map_fragment>
+        ${coil?`{ float f=fract(vAlong*${SCUTES}.0), seam=smoothstep(0.0,0.14,f)*(1.0-smoothstep(0.84,1.0,f));
+          vec3 plate=vec3(0.93,0.89,0.80)*(0.74+0.26*seam);                                  // the wide belly plates, with dark seams between them
+          float band=smoothstep(0.3,0.7,0.5+0.5*sin(vAlong*0.85+2.0*sin(vAlong*0.21)));    // soft pale-and-taupe bands along the back
+          diffuseColor.rgb*=mix(1.0,0.8,band*(1.0-vBelly));
+          diffuseColor.rgb=mix(diffuseColor.rgb,plate,vBelly); }`:''}`)
+        .replace('#include <aomap_fragment>','#include <aomap_fragment>\n  reflectedLight.indirectDiffuse*=vAo*0.7; reflectedLight.indirectSpecular*=mix(1.0,vAo,0.7);');
+    };
+    m.customProgramCacheKey=()=>coil?'naga-coil':'naga';   // the coil's shader differs from the heads'
+    return m; };
+  const coilMat=skin(NT.skinA,NT.norA,'#cfc5b2',{coil:true});
+  const frontMat=skin(NT.skinA,NT.norA,'#d8cfbe',{side:THREE.DoubleSide,bump:.45}), backMat=skin(NT.skinB,NT.norB,'#a8987f',{side:THREE.DoubleSide,bump:.8}),
+        headMat=skin(NT.skinB,NT.norB,'#c7bba6',{side:THREE.DoubleSide,bump:.8});
 
   // the body: up the axis from the neck, then spiralling outward and down
   const TOP=base+13, HS=1.3, cp=[new THREE.Vector3(0,TOP,0),new THREE.Vector3(0,TOP-4.5,0),new THREE.Vector3(3,base+4.2,1.8)];
@@ -429,38 +447,64 @@ let sheshaTick=null;
   const radiusAt=s=>{ const cap=3, R0=5.6, neck=16, R1=4; if(s<cap) return R0*Math.sqrt(Math.max(0,1-((cap-s)/cap)**2));
     if(s<neck) return R0+(R1-R0)*(s-cap)/(neck-cap);
     const u=(s-neck)/(LEN-neck); return u<.86 ? R1-(R1-2.2)*u/.86 : 2.2*Math.pow(Math.max(0,1-(u-.86)/.14),.7)+.06; };
-  function taperTube(segs,radial,k){
-    const fr=curve.computeFrenetFrames(segs,false), P=new THREE.Vector3(), N=new THREE.Vector3(), n=(segs+1)*(radial+1);
-    const pos=new Float32Array(n*3), nor=new Float32Array(n*3), uv=new Float32Array(n*2), idx=[]; let along=0, prev=0;
-    for(let i=0;i<=segs;i++){ const t=i/segs, s=t*LEN, r=radiusAt(s); along+=(s-prev)/(2*Math.PI*Math.max(r,1.2))*k; prev=s; curve.getPointAt(t,P);
-      for(let j=0;j<=radial;j++){ const v=j/radial*Math.PI*2, o=i*(radial+1)+j;
-        N.copy(fr.normals[i]).multiplyScalar(-Math.cos(v)).addScaledVector(fr.binormals[i],Math.sin(v)).normalize();
-        pos[o*3]=P.x+N.x*r; pos[o*3+1]=P.y+N.y*r; pos[o*3+2]=P.z+N.z*r; nor[o*3]=N.x; nor[o*3+1]=N.y; nor[o*3+2]=N.z; uv[o*2]=j/radial; uv[o*2+1]=along; } }
+  // a slightly flattened body, flatter still underneath, with its belly turned down on the coils and toward the viewer
+  // where the body rears up (as a cobra's does)
+  function coilGeometry(segs,radial,kTex){
+    const P=new THREE.Vector3(), T=new THREE.Vector3(), D=new THREE.Vector3(), U=new THREE.Vector3(), W=new THREE.Vector3(), N=new THREE.Vector3(), DOWN=new THREE.Vector3(0,-1,0);
+    const n=(segs+1)*(radial+1), pos=new Float32Array(n*3), nor=new Float32Array(n*3), uv=new Float32Array(n*2), alg=new Float32Array(n), bel=new Float32Array(n), idx=[];
+    const spine=[]; let along=0, prev=0;
+    for(let i=0;i<=segs;i++){ const t=i/segs, s=t*LEN, r=radiusAt(s); along+=(s-prev)/(2*Math.PI*Math.max(r,1.2)); prev=s;
+      curve.getPointAt(t,P); curve.getTangentAt(t,T); spine.push([P.x,P.y,P.z,r,s]);
+      D.copy(DOWN).lerp(F,THREE.MathUtils.smoothstep(Math.abs(T.y),.55,.9)).normalize();
+      U.copy(D).addScaledVector(T,-D.dot(T)).normalize().negate(); W.crossVectors(T,U).normalize();
+      for(let j=0;j<=radial;j++){ const v=j/radial*Math.PI*2, cx=Math.cos(v), sy=Math.sin(v), o=i*(radial+1)+j;
+        const w=r*1.1, h=r*(sy<0?.8:.92);
+        pos[o*3]=P.x+W.x*cx*w+U.x*sy*h; pos[o*3+1]=P.y+W.y*cx*w+U.y*sy*h; pos[o*3+2]=P.z+W.z*cx*w+U.z*sy*h;
+        N.copy(W).multiplyScalar(cx/w).addScaledVector(U,sy/h).normalize(); nor[o*3]=N.x; nor[o*3+1]=N.y; nor[o*3+2]=N.z;
+        uv[o*2]=j/radial*2; uv[o*2+1]=along*kTex; alg[o]=along; bel[o]=THREE.MathUtils.smoothstep(-sy,.5,.88); } }
     for(let i=0;i<segs;i++) for(let j=0;j<radial;j++){ const a=i*(radial+1)+j, b=a+radial+1; idx.push(a,b,a+1, b,b+1,a+1); }
+    // contact shadow: darken skin that sits close to another stretch of the body (one turn resting on the next)
+    const ao=new Float32Array(n), M=spine.filter((_,i)=>i%2===0);
+    for(let o=0;o<n;o++){ const i=Math.floor(o/(radial+1)), si=spine[i][4], ri=spine[i][3], x=pos[o*3], y=pos[o*3+1], z=pos[o*3+2]; let gap=1e9;
+      for(const c of M){ if(Math.abs(c[4]-si)<ri*3+5) continue; const dx=x-c[0], dy=y-c[1], dz=z-c[2], g=Math.sqrt(dx*dx+dy*dy+dz*dz)-c[3]*1.05; if(g<gap) gap=g; }
+      ao[o]=.32+.68*THREE.MathUtils.smoothstep(gap,0,4.5)*(1-.25*bel[o]); }
     const g=new THREE.BufferGeometry(); g.setAttribute('position',new THREE.BufferAttribute(pos,3)); g.setAttribute('normal',new THREE.BufferAttribute(nor,3));
-    g.setAttribute('uv',new THREE.BufferAttribute(uv,2)); g.setIndex(idx); return g; }
-  scene.add(new THREE.Mesh(taperTube(lowTier?600:1100,lowTier?14:22,1.1),coilMat));
-  const sp=[],sc=[]; const A=new THREE.Color('#9fe8ff'),B=new THREE.Color('#ffffff'), P=new THREE.Vector3();
-  for(let i=0;i<700;i++){ const t=Math.random(), r=radiusAt(t*LEN)+1.6; curve.getPointAt(t,P); sp.push(P.x+rnd(-r,r),P.y+rnd(-r,r),P.z+rnd(-r,r)); const c=A.clone().lerp(B,Math.random()); sc.push(c.r,c.g,c.b); }
-  scene.add(makePoints(sp,sc,.4,.3));
-  const halo=sprite('#9fe8ff',95,.06); halo.position.set(0,base,0); scene.add(halo);
+    g.setAttribute('uv',new THREE.BufferAttribute(uv,2)); g.setAttribute('along',new THREE.BufferAttribute(alg,1)); g.setAttribute('belly',new THREE.BufferAttribute(bel,1));
+    g.setAttribute('ao',new THREE.BufferAttribute(ao,1)); g.setIndex(idx); return g; }
+  const coil=new THREE.Mesh(coilGeometry(lowTier?600:1100,lowTier?16:28,2.2),coilMat); coil.castShadow=coil.receiveShadow=true; scene.add(coil);
+  const sp=[],sc=[]; const A=new THREE.Color('#fff1d8'),B=new THREE.Color('#ffffff'), P=new THREE.Vector3();
+  for(let i=0;i<500;i++){ const t=Math.random(), r=radiusAt(t*LEN)+1.6; curve.getPointAt(t,P); sp.push(P.x+rnd(-r,r),P.y+rnd(-r,r),P.z+rnd(-r,r)); const c=A.clone().lerp(B,Math.random()); sc.push(c.r,c.g,c.b); }
+  scene.add(makePoints(sp,sc,.35,.16));
+  const halo=sprite('#ffe9c4',95,.04); halo.position.set(0,base,0); scene.add(halo);
+
+  // light for Shesha alone: a warm key from above and in front that casts real shadows (the hoods shade the body, the coils
+  // shade one another), and a cool rim from behind that traces his outline against the dark
+  renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+  const key=new THREE.SpotLight(0xffeed4,1.5,0,.62,.55,0);
+  key.position.set(F.x*22+side.x*88,base+100,F.z*22+side.z*88); key.target.position.set(0,base+8,0); scene.add(key,key.target);
+  key.castShadow=true; key.shadow.mapSize.set(lowTier?1024:2048,lowTier?1024:2048); key.shadow.camera.near=60; key.shadow.camera.far=220;
+  key.shadow.bias=-.0003; key.shadow.normalBias=.06;
+  const rim=new THREE.PointLight(0xaec6ff,700,170,1.6); rim.position.set(-F.x*58,base+38,-F.z*58); scene.add(rim);
 
   // seven hooded heads fan out of the neck, facing the viewer at this stop, each with a jewel on its hood
-  const camA=STOPS.find(s=>s.id==='shesha').ang, F=new THREE.Vector3(Math.sin(camA),0,Math.cos(camA)), side=new THREE.Vector3(F.z,0,-F.x);
-  const gemGeo=new THREE.OctahedronGeometry(.55,0), gemMat=new THREE.MeshStandardMaterial({color:'#8a0a1e',emissive:'#e0102c',emissiveIntensity:1.15,metalness:.2,roughness:.12,envMap:goldEnv,envMapIntensity:1});
-  const eyeMat=new THREE.MeshBasicMaterial({color:new THREE.Color(2.6,1.8,.45)}), mouthMat=new THREE.MeshStandardMaterial({color:'#3a4566',roughness:.5});
+  const gemGeo=new THREE.OctahedronGeometry(.5,0), gemMat=new THREE.MeshStandardMaterial({color:'#6e0616',emissive:'#c20c26',emissiveIntensity:.75,metalness:.1,roughness:.1,envMap:goldEnv,envMapIntensity:1.2});
+  const eyeMat=new THREE.MeshBasicMaterial({color:new THREE.Color(2.1,1.45,.38)}), mouthMat=new THREE.MeshStandardMaterial({color:'#4a3a2e',roughness:.6});
   const dec=(b,T)=>{ const s=atob(b), u=new Uint8Array(s.length); for(let i=0;i<s.length;i++) u[i]=s.charCodeAt(i); return new T(u.buffer); };
   fetch('assets/models/shesha_hood.json').then(r=>{ if(!r.ok) throw new Error(r.status); return r.json(); }).then(M=>{
     const MATS={front:frontMat,back:backMat,head:headMat,eyes:eyeMat,mouth:mouthMat};
-    const parts=M.meshes.map(m=>{ const g=new THREE.BufferGeometry();
-      g.setAttribute('position',new THREE.BufferAttribute(dec(m.pos,Float32Array),3)); g.setAttribute('normal',new THREE.BufferAttribute(dec(m.nor,Float32Array),3));
-      g.setAttribute('uv',new THREE.BufferAttribute(dec(m.uv,Float32Array),2)); g.setIndex(new THREE.BufferAttribute(dec(m.idx,Uint16Array),1)); return [g,MATS[m.name]]; });
+    const parts=M.meshes.map(m=>{ const g=new THREE.BufferGeometry(), p=dec(m.pos,Float32Array), cnt=p.length/3;
+      g.setAttribute('position',new THREE.BufferAttribute(p,3)); g.setAttribute('normal',new THREE.BufferAttribute(dec(m.nor,Float32Array),3));
+      g.setAttribute('uv',new THREE.BufferAttribute(dec(m.uv,Float32Array),2)); g.setIndex(new THREE.BufferAttribute(dec(m.idx,Uint16Array),1));
+      // necks darken where they rise out of the body; no belly plates or bands on the hoods
+      const ao=new Float32Array(cnt); for(let i=0;i<cnt;i++) ao[i]=.42+.58*THREE.MathUtils.smoothstep(p[i*3+1],.5,6);
+      g.setAttribute('ao',new THREE.BufferAttribute(ao,1)); g.setAttribute('belly',new THREE.BufferAttribute(new Float32Array(cnt),1)); g.setAttribute('along',new THREE.BufferAttribute(new Float32Array(cnt),1));
+      return [g,MATS[m.name],m.name]; });
     const jf=M.hoodFront, heads=[];
     for(let k=-3;k<=3;k++){ const ak=Math.abs(k), outer=new THREE.Group(), inner=new THREE.Group();
-      parts.forEach(([g,m])=>inner.add(new THREE.Mesh(g,m)));
+      parts.forEach(([g,m,name])=>{ const mesh=new THREE.Mesh(g,m); mesh.castShadow=name!=='eyes'; mesh.receiveShadow=true; inner.add(mesh); });
       inner.rotation.set(-.12,0,-.174);                       // stand the cut neck upright: the original leans forward and a little to one side
-      const gem=new THREE.Mesh(gemGeo,gemMat); gem.position.set(jf[0],jf[1],jf[2]+.25); gem.scale.set(1,1.3,.6); inner.add(gem);
-      inner.add(makePoints([jf[0],jf[1],jf[2]+.6],[2.0,.16,.1],2.6,.55));
+      const gem=new THREE.Mesh(gemGeo,gemMat); gem.position.set(jf[0],jf[1],jf[2]+.25); gem.scale.set(.9,1.2,.55); inner.add(gem);
+      inner.add(makePoints([jf[0],jf[1],jf[2]+.6],[1.8,.14,.1],2.2,.35));
       outer.add(inner);
       outer.position.set(0,TOP-(3.4+ak*.6)*HS,0).addScaledVector(side,k*.65*HS).addScaledVector(F,(.6-ak*1.1)*HS);
       const rx=ak*.05, rz=-k*.34; outer.rotation.set(rx,camA+k*.09,rz,'YXZ'); outer.scale.setScalar(HS*(1-ak*.06));
