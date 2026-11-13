@@ -1,0 +1,9 @@
+# original downloads, kept locally (see README)
+assets/_downloads/
+assets/nasa-starmap/
+
+# system and editor files
+.DS_Store
+.vscode/
+.idea/
+__pycache__/
