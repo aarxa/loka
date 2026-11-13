@@ -1,8 +1,10 @@
 # Cut the raised neck, hood and head out of "King Cobra" by Anthony Yanez (CC BY 4.0), re-centre it on the base of the
-# neck, scale it to scene units, smooth it, and write it as compact base64 arrays. The skin itself is drawn in the shader.
+# neck, scale it to scene units, smooth it, and write it as compact base64 arrays. Also retint the python-skin textures to
+# Shesha's pale ivory.
 import sys, json, base64, numpy as np
-src, out_dir = sys.argv[1], sys.argv[2]
-LEVELS = int(sys.argv[3]) if len(sys.argv) > 3 else 1     # rounds of smoothing for the hood and head (each one quadruples the triangles)
+from PIL import Image
+src, out_dir, tex_dir = sys.argv[1], sys.argv[2], sys.argv[3]
+LEVELS = int(sys.argv[4]) if len(sys.argv) > 4 else 1     # rounds of smoothing for the hood and head (each one quadruples the triangles)
 g = json.load(open(src + '/scene.gltf')); buf = open(src + '/scene.bin', 'rb').read()
 CT = {5126: np.float32, 5123: np.uint16, 5125: np.uint32}; NC = {'SCALAR': 1, 'VEC2': 2, 'VEC3': 3, 'VEC4': 4}
 def acc(i):
@@ -129,3 +131,19 @@ print('hoodFront', out['hoodFront'], 'snout', out['snout'], 'headTop', out['head
 js = json.dumps(out, separators=(',', ':'))
 open(out_dir + '/shesha_hood.json', 'w').write(js)
 print('json bytes', len(js))
+
+# textures: python skin -> warm ivory with soft taupe markings, like a pale cobra; normals kept as they are
+def retint(path, dst, lo, hi):
+    im = np.asarray(Image.open(path).convert('RGB')).astype(np.float32) / 255.0
+    L = im @ np.array([0.299, 0.587, 0.114], np.float32)
+    L = (L - np.percentile(L, 2)) / max(np.percentile(L, 98) - np.percentile(L, 2), 1e-3)
+    L = np.clip(L, 0, 1); L = L * L * (3 - 2 * L)
+    t = 0.52 + 0.48 * L
+    rgb = np.array(lo, np.float32) * (1 - t[..., None]) + np.array(hi, np.float32) * t[..., None]
+    Image.fromarray((np.clip(rgb, 0, 1) * 255 + 0.5).astype(np.uint8)).save(dst, quality=90)
+T = src + '/textures/'
+retint(T + '13_-_Default_baseColor.jpeg', tex_dir + '/naga_skin_a.jpg', (0.60, 0.54, 0.45), (0.98, 0.95, 0.89))
+retint(T + '08_-_Default_baseColor.jpeg', tex_dir + '/naga_skin_b.jpg', (0.50, 0.45, 0.38), (0.95, 0.92, 0.86))
+for s_, d in (('13', 'naga_nor_a'), ('08', 'naga_nor_b')):
+    Image.open(T + s_ + '_-_Default_normal.png').convert('RGB').save(tex_dir + '/' + d + '.jpg', quality=92)
+print('textures written')

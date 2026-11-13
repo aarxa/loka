@@ -50,7 +50,7 @@ In progress on their own branches:
 - **Sky:** [Deep Star Maps 2020](https://svs.gsfc.nasa.gov/4851), NASA/Goddard Scientific Visualization Studio (from Hipparcos-2, Tycho-2 and Gaia DR2).
 - **Land and rock textures:** [aerial_grass_rock](https://polyhaven.com/a/aerial_grass_rock) and [cliff_side](https://polyhaven.com/a/cliff_side), Poly Haven, CC0.
 - **Water normals:** [three.js](https://github.com/mrdoob/three.js) example texture, MIT.
-- **Shesha's heads:** ["King Cobra"](https://sketchfab.com/3d-models/king-cobra-a8dab84cd4fc428bbcfe194e3ac14d06) by Anthony Yanez, [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Cut to the neck, hood and head, and smoothed; the skin and scales are drawn in the shader.
+- **Shesha's heads:** ["King Cobra"](https://sketchfab.com/3d-models/king-cobra-a8dab84cd4fc428bbcfe194e3ac14d06) by Anthony Yanez, [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Cut to the neck, hood and head, smoothed, and its skin retinted.
 - **3D engine:** [three.js](https://threejs.org), MIT, served from `vendor/three/`.
 - **Typefaces:** Cormorant Garamond, Newsreader, Inter and Tiro Devanagari Sanskrit, SIL Open Font License, served from `fonts/` (licences included).
 
