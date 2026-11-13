@@ -198,9 +198,9 @@ const petalMat=(base,tip,glow)=>new THREE.ShaderMaterial({
 { const lot=new THREE.Group(); lot.position.y=6*S+.4;
   const ring=(n,len,wid,cup,curl,tilt,base,tip,glow,off)=>{ const geo=petalGeo(len,wid,cup,curl), mat=petalMat(base,tip,glow);
     for(let i=0;i<n;i++){ const piv=new THREE.Object3D(); piv.rotation.y=i/n*Math.PI*2+off; const m=new THREE.Mesh(geo,mat); m.rotation.x=-tilt; piv.add(m); lot.add(piv); } };
-  ring(16,15,5.2,1.4,.25,.12,'#b8336a','#ffc2d8',.8,0);          // outer petals, lying open
-  ring(12,11,4.6,2.2,.3,.45,'#d04a7a','#ffd6e2',.7,.26);         // middle ring, lifting
-  ring(8,7,3.8,2.6,.35,.95,'#e8a060','#fff0d8',.55,.1);            // inner petals, nearly upright
+  ring(16,15,5.2,1.4,.25,.12,'#b8336a','#ffc2d8',.55,0);         // outer petals, lying open (gentle: the camera comes close)
+  ring(12,11,4.6,2.2,.3,.45,'#d04a7a','#ffd6e2',.48,.26);        // middle ring, lifting
+  ring(8,7,3.8,2.6,.35,.95,'#e8a060','#fff0d8',.4,.1);             // inner petals, nearly upright
   // the seed-pod at the heart
   const pod=new THREE.Mesh(new THREE.CylinderGeometry(2.2,1.6,1.2,40),new THREE.MeshStandardMaterial({color:'#e0b24a',emissive:'#6a4a10',metalness:.5,roughness:.35}));
   pod.position.y=1.6; lot.add(pod);
@@ -535,6 +535,8 @@ function updateLabels(){
 // the age's colours: the scene stays in the Satya yuga (the time dial that changed this is parked on the time-dial branch)
 const yC={color:new THREE.Color(YUGAS[0].tint),bg:new THREE.Color(YUGAS[0].bg),dharma:1,nebA:new THREE.Color('#ffd59a'),nebB:new THREE.Color('#7fa2ff')};
 const cur=camAt(scrollY);
+const ptr={x:0,y:0,sx:0,sy:0}; let lastY=scrollY;
+if(!reduce) addEventListener('pointermove',e=>{ if(e.pointerType!=='mouse') return; ptr.x=e.clientX/innerWidth*2-1; ptr.y=e.clientY/innerHeight*2-1; },{passive:true});
 
 // ---- filmic finish: bloom, ACES colour, vignette, grain, a touch of lens fringing ----
 const composer=new EffectComposer(renderer);
@@ -559,8 +561,9 @@ const finish=new ShaderPass({
   }` });
 composer.addPass(finish);
 
+const pxFor=()=>renderer.getDrawingBufferSize(new THREE.Vector2()).y/(2*Math.tan(THREE.MathUtils.degToRad(camera.fov)/2));
 function resize(){ renderer.setSize(innerWidth,innerHeight); composer.setSize(innerWidth,innerHeight); finish.uniforms.res.value.set(innerWidth,innerHeight); starU.pr.value=renderer.getPixelRatio();
-  GU.px.value=renderer.getDrawingBufferSize(new THREE.Vector2()).y/(2*Math.tan(THREE.MathUtils.degToRad(camera.fov)/2));
+  GU.px.value=pxFor();
   if(lowTier) bloom.resolution.set(innerWidth/2,innerHeight/2);
   camera.aspect=innerWidth/innerHeight;
   // keep the cosmos to the right of the reading card on wide screens
@@ -576,9 +579,15 @@ function frame(now){
   const tg=camAt(scrollY); const k=reduce?1:1-Math.exp(-dt*3.2);
   for(const key in tg) cur[key]+=(tg[key]-cur[key])*k;
   const drift=reduce?0:Math.sin(t*.07)*.12;
-  const a=cur.ang+drift, d=cur.dist*(camera.aspect<.8?1.35:1);
-  camera.position.set(Math.sin(a)*d,cur.y+cur.h,Math.cos(a)*d);
+  // the camera answers the mouse a little, as if the screen were a window
+  ptr.sx+=(ptr.x-ptr.sx)*Math.min(1,dt*2.5); ptr.sy+=(ptr.y-ptr.sy)*Math.min(1,dt*2.5);
+  const a=cur.ang+drift+ptr.sx*.035, d=cur.dist*(camera.aspect<.8?1.35:1);
+  camera.position.set(Math.sin(a)*d,cur.cy-ptr.sy*1.4,Math.cos(a)*d);
   camera.lookAt(cur.lx,cur.ly,cur.lz);
+  // scroll fast and the view widens a touch; stop, and it settles back
+  { const v=Math.abs(scrollY-lastY)/Math.max(dt,1e-3); lastY=scrollY; const target=50+(reduce?0:Math.min(7,v*.0035));
+    const fov=camera.fov+(target-camera.fov)*Math.min(1,dt*(target>camera.fov?6:2));
+    if(Math.abs(fov-camera.fov)>.01){ camera.fov=fov; camera.updateProjectionMatrix(); GU.px.value=pxFor(); } }
   scene.fog.density=cur.fog*(camera.aspect<.8?.8:1);
 
   scene.fog.color.copy(yC.bg).multiplyScalar(.5);
@@ -615,9 +624,10 @@ function frame(now){
   { const sy=sun.position.y, between=(sy-cur.ly)*(sy-camera.position.y)<0 && Math.abs(sy-cur.ly)>8; const f=sunBB.material.uniforms.fade; f.value+=((between?.08:1)-f.value)*Math.min(1,dt*3); }
   { const far=camera.position.length()>300; discs.forEach(g=>{ g.visible=far||Math.abs(g.position.y-camera.position.y)<170;
       // a world that sits between the camera and the world we're looking at turns faint, so it doesn't fog the view
-      const dy=g.position.y-cur.ly, between=!far && dy*(g.position.y-camera.position.y)<0 && Math.abs(dy)>8;
+      const dy=g.position.y-cur.ly, near=Math.abs(g.position.y-camera.position.y)<14;   // flying through it: keep it
+      const between=!far && !near && dy*(g.position.y-camera.position.y)<0 && Math.abs(dy)>8;
       // and one the camera is passing through, near its centre (on the way to and from the sky stop)
-      const inside=Math.abs(g.position.y-camera.position.y)<9 && Math.hypot(camera.position.x,camera.position.z)<55;
+      const inside=Math.abs(g.position.y-camera.position.y)<9 && Math.hypot(camera.position.x,camera.position.z)<14;
       g.userData.fade+=((between||inside?0:1)-g.userData.fade)*Math.min(1,dt*3); g.userData.mats.forEach(m=>m.uniforms.fade.value=g.userData.fade); }); }
   galaxies.forEach(G=>{ if(G.group.visible) G.lod(85/camera.position.distanceTo(G.group.position)); });   // a world seen from afar draws fewer, brighter points
   composer.render();

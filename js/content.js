@@ -50,14 +50,20 @@ export const STOPS = [
     src:'Vishnu Purana 2.2–2.7 · Bhagavata Purana 5.16–5.25' },
 
   { id:'satya', nav:'Satyaloka', grp:'up', y:6*S, dist:52, h:18, ang:.35, fog:.008,
+    // low beside the lotus, pushing in as you read; then down through the disc of light to the fire below
+    shot:{ a:[.22,.46], d:[40,29], h:[5,9], look:[0,6*S+4,0] }, via:[[.62,27,6*S-4],[.74,33,5*S+22]],
     kicker:'Upper world 7 of 7 · the highest', title:'Satyaloka', deva:'सत्यलोक', iast:'Satyaloka · also Brahmaloka',
     body:`<p>The world of Brahma, highest of all. The Vishnu Purana says that those who live here never again know death.</p>`,
     src:'Vishnu Purana 2.7' },
   { id:'tapa', nav:'Tapoloka', grp:'up', y:5*S, dist:58, h:24, ang:.8, fog:.008,
+    // inside the flames, drifting round the burning star; then out through the bottom of the fire
+    shot:{ a:[.86,1.06], d:[38,31], h:[6,4], look:[0,5*S+.5,0] }, via:[[1.12,30,5*S-4],[1.2,35,4*S+30]],
     kicker:'Upper world 6 of 7', title:'Tapoloka', deva:'तपोलोक', iast:'Tapoloka',
     body:`<p>Home of the Vaibhraja gods, who cannot be burned by the fire that ends the world.</p>`,
     src:'Vishnu Purana 2.7' },
   { id:'jana', nav:'Janaloka', grp:'up', y:4*S, dist:64, h:28, ang:1.25, fog:.008,
+    // high over the calm spiral, the fire glowing above; then down through it toward Maharloka
+    shot:{ a:[1.26,1.44], d:[46,38], h:[21,26], look:[0,4*S,0] }, via:[[1.52,29,4*S-3],[1.62,42,3*S+26]],
     kicker:'Upper world 5 of 7', title:'Janaloka', deva:'जनलोक', iast:'Janaloka',
     body:`<p>Home of Sanandana and the other mind-born sons of Brahma. Four of these eternal child-sages once came to Vaikuntha and were turned away at the gate. They cursed the two doorkeepers to be born on earth, three times over.</p>`,
     links:[{label:'The curse at Vaikuntha’s gate'}],
