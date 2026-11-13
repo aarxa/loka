@@ -3,95 +3,131 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Loka Cosmos Prototype</title>
+<title>Loka · The Puranic cosmos</title>
+<meta name="description" content="An explorable universe of Hindu mythology: fall through the fourteen worlds of the Puranas, from Brahma’s world down to Ananta Shesha.">
+<meta name="theme-color" content="#07060c">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2307060c'/%3E%3Cellipse cx='16' cy='16' rx='8' ry='12.5' fill='none' stroke='%23e3b964' stroke-width='1.8'/%3E%3Ccircle cx='16' cy='16' r='2.2' fill='%23e3b964'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@400;500;600&family=Tiro+Devanagari+Sanskrit&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=Inter:wght@400;500;600&family=Tiro+Devanagari+Sanskrit&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg:#07060c; --ink:#efe7d6; --muted:#a79d8a; --gold:#e3b964;
-  --line:rgba(227,185,100,.22); --panel:rgba(10,8,16,.66); --accent:#f4efe2;
+  --bg:#07060c; --ink:#f1eadb; --ink-2:#d8cfbd; --muted:#9b917f; --faint:#6e675a;
+  --gold:#e3b964; --gold-2:#bf9f62; --rule:rgba(239,231,214,.12); --line:rgba(227,185,100,.24); --accent:#f4efe2; --panel:rgba(10,8,16,.66);
+  --display:'Cormorant Garamond',Georgia,serif; --read:'Newsreader',Georgia,serif; --ui:Inter,system-ui,-apple-system,sans-serif; --sa:'Tiro Devanagari Sanskrit',serif;
+  --ease:cubic-bezier(.2,.7,.2,1);
 }
 *{box-sizing:border-box}
-html,body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,sans-serif;font-size:15px;line-height:1.55}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:400 15px/1.55 var(--ui);-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
 body{overflow-x:hidden}
 button{font:inherit;color:inherit}
+a{color:inherit}
+:focus-visible{outline:2px solid var(--gold);outline-offset:3px;border-radius:4px}
 #gl{position:fixed;inset:0;width:100vw;height:100vh;display:block;z-index:0}
 .vignette{position:fixed;inset:0;pointer-events:none;z-index:1;background:radial-gradient(ellipse at 50% 50%,transparent 50%,rgba(0,0,0,.6))}
+/* a soft dark fade behind the text, so it reads over the cosmos without a box */
+.scrim{position:fixed;top:0;bottom:0;left:0;width:min(62vw,840px);pointer-events:none;z-index:2;background:linear-gradient(90deg,rgba(6,5,10,.93) 0%,rgba(6,5,10,.84) 42%,rgba(6,5,10,.45) 70%,rgba(6,5,10,0) 100%)}
+.scrim.r{left:auto;right:0;width:300px;background:linear-gradient(270deg,rgba(6,5,10,.72) 0%,rgba(6,5,10,.4) 50%,rgba(6,5,10,0) 100%)}
 #labels{position:fixed;inset:0;overflow:hidden;pointer-events:none;z-index:3}
-.l3{position:absolute;left:0;top:0;font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:#f6ead0;white-space:nowrap;text-shadow:0 0 8px #000,0 0 2px #000;opacity:0;transition:opacity .4s}
-.l3::after{content:'';display:block;width:1px;height:18px;margin:4px auto 0;background:linear-gradient(#f6ead0,transparent)}
-.l3 small{display:block;text-transform:none;letter-spacing:.02em;font-size:11px;color:#cdbf9f;text-align:center}
-.progress{position:fixed;top:0;left:0;height:2px;width:0;background:var(--accent);z-index:30;box-shadow:0 0 8px var(--accent)}
-header{position:fixed;top:0;left:0;right:0;height:58px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;z-index:20;background:linear-gradient(rgba(7,6,12,.85),rgba(7,6,12,0))}
-.brand{display:flex;align-items:center;gap:10px}
-.logo{font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:600;letter-spacing:.32em;color:var(--gold)}
-.wt{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);border:1px solid var(--line);padding:3px 8px;border-radius:99px}
-.hbtn{background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:99px;padding:6px 14px;font-size:12.5px;cursor:pointer}
-.hbtn[aria-pressed="true"]{background:var(--gold);color:#140f05;border-color:var(--gold)}
-.hbtns{display:flex;gap:8px}
+.l3{position:absolute;left:0;top:0;font:500 11px/1.3 var(--ui);letter-spacing:.18em;text-transform:uppercase;color:#f3ead8;white-space:nowrap;text-shadow:0 0 10px #000,0 0 2px #000;opacity:0;transition:opacity .4s}
+.l3::after{content:'';display:block;width:1px;height:18px;margin:5px auto 0;background:linear-gradient(#f3ead8,transparent)}
+.l3 small{display:block;text-transform:none;letter-spacing:0;font:italic 400 13px/1.3 var(--read);color:#cdbf9f;text-align:center;margin-top:2px}
+.progress{position:fixed;top:0;left:0;height:2px;width:0;background:var(--gold);opacity:.7;z-index:30}
+header{position:fixed;top:0;left:0;right:0;height:64px;display:flex;align-items:center;justify-content:space-between;padding:0 28px;z-index:20;background:linear-gradient(rgba(7,6,12,.8),rgba(7,6,12,0))}
+.logo{font:500 21px/1 var(--display);letter-spacing:.42em;color:var(--gold)}
+.hbtn{display:inline-flex;align-items:center;gap:8px;background:rgba(7,6,12,.4);border:1px solid var(--rule);border-radius:99px;padding:8px 15px 8px 13px;font:500 12.5px/1 var(--ui);letter-spacing:.02em;color:var(--ink-2);cursor:pointer;transition:border-color .2s,color .2s,background .2s}
+.hbtn svg{width:15px;height:15px;flex:none}
+.hbtn:hover{border-color:var(--line);color:var(--ink)}
+.hbtn[aria-pressed="true"]{background:var(--gold);border-color:var(--gold);color:#140f05}
 main{position:relative;z-index:5}
-section.stop{min-height:100vh;display:flex;align-items:center;padding:90px 48px}
-.card{max-width:410px;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:24px 24px 20px;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);opacity:0;transform:translateY(28px);transition:opacity .9s ease,transform .9s ease}
-.stop.in .card{opacity:1;transform:none}
-.kicker{font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);margin-bottom:8px}
-.card h2{font-family:'Cormorant Garamond',serif;font-weight:500;font-size:38px;line-height:1.05;margin:0}
-.deva{font-family:'Tiro Devanagari Sanskrit',serif;font-size:21px;color:var(--gold);font-weight:400;margin-left:6px;white-space:nowrap}
-.iast{font-style:italic;font-family:'Cormorant Garamond',serif;color:var(--muted);font-size:17px;margin-top:2px}
-.body p{margin:12px 0 0}
-.src{margin:14px 0 0;font-size:12px;color:var(--muted);border-top:1px solid var(--line);padding-top:10px}
-.src::before{content:'Source · ';color:var(--gold)}
-.src a{color:inherit;text-decoration:underline;text-decoration-color:rgba(232,196,120,.45);text-underline-offset:2px}
-.versions{margin:12px 0 0;font-size:12.5px;color:#d7ccb6;background:rgba(227,185,100,.07);border-left:2px solid var(--gold);padding:8px 10px;border-radius:0 8px 8px 0}
-.versions b{color:var(--gold);font-weight:600;margin-right:4px}
-.versions summary{cursor:pointer;color:var(--gold);font-weight:600;list-style:none;display:inline;margin-right:4px}
+section.stop{min-height:100vh;display:flex;align-items:center;padding:112px 64px}
+/* a world's text: eyebrow, name, Sanskrit, reading text, then stories and sources */
+.card{max-width:440px;width:100%;text-shadow:0 1px 14px rgba(4,3,8,.6)}
+.card>*{opacity:0;transform:translateY(14px);transition:opacity .9s var(--ease),transform .9s var(--ease)}
+.stop.in .card>*{opacity:1;transform:none}
+.card>:nth-child(2){transition-delay:.06s}.card>:nth-child(3){transition-delay:.12s}.card>:nth-child(4){transition-delay:.18s}
+.card>:nth-child(5){transition-delay:.24s}.card>:nth-child(6){transition-delay:.3s}
+.kicker{font:500 11px/1.4 var(--ui);letter-spacing:.22em;text-transform:uppercase;color:var(--gold);margin-bottom:14px}
+.card h2{font:500 56px/.98 var(--display);letter-spacing:-.01em;margin:0;color:var(--ink)}
+.names{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 0;margin-top:10px}
+.deva{font:400 19px/1.3 var(--sa);color:var(--gold-2)}
+.iast{font:italic 400 17px/1.3 var(--display);color:var(--muted)}
+.deva+.iast::before{content:'·';display:inline-block;margin:0 12px;color:var(--faint);font-style:normal}
+.body{margin-top:20px;font:400 17.5px/1.62 var(--read);color:var(--ink-2);text-wrap:pretty}
+.body p{margin:0}
+.body p+p{margin-top:.75em}
+.more-btn{display:none}
+.label{font:500 11px/1.4 var(--ui);letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+.stories-here{margin-top:28px}
+.stories-here ul{list-style:none;margin:0;padding:0;border-top:1px solid var(--rule)}
+.story{display:flex;justify-content:space-between;align-items:baseline;gap:18px;width:100%;padding:11px 0;margin:0;background:none;border:0;border-bottom:1px solid var(--rule);text-align:left;text-decoration:none;cursor:default}
+.story-t{font:400 16.5px/1.35 var(--read);color:var(--ink)}
+.story-m{font:400 12px/1.3 var(--ui);color:var(--muted);white-space:nowrap}
+.stories-here li:last-child .story{border-bottom:0}
+a.story,button.story{cursor:pointer}
+a.story .story-m,button.story .story-m{color:var(--gold)}
+a.story:hover .story-t,button.story:hover .story-t{color:var(--gold)}
+.meta{margin-top:28px;padding-top:14px;border-top:1px solid var(--rule)}
+.src{margin:0;font:400 12.5px/1.65 var(--ui);color:var(--muted)}
+.src b,.versions summary b{font-weight:500;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold-2);margin-right:10px}
+.src a{text-decoration:underline;text-decoration-color:rgba(232,196,120,.4);text-underline-offset:2px}
+.versions{margin-top:10px}
+.versions summary{cursor:pointer;list-style:none;display:inline-flex;align-items:center;font:400 12.5px/1.6 var(--ui);color:var(--muted)}
 .versions summary::-webkit-details-marker{display:none}
-.versions:not([open]) summary::after{content:' · tap to read';color:var(--muted);font-weight:400}
-.links{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px}
-.link{background:rgba(255,255,255,.05);border:1px solid var(--line);border-radius:99px;padding:5px 11px;font-size:12.5px;cursor:pointer;transition:.2s}
-.link span{color:var(--accent)}
-.link:not([disabled]):hover{border-color:var(--accent);background:rgba(255,255,255,.1)}
-.link[disabled]{cursor:default;opacity:.55}
-.link[disabled]::after{content:' · soon';color:var(--muted)}
-/* intro / end */
-.intro .card,.end .card{max-width:560px;background:transparent;border:0;backdrop-filter:none;-webkit-backdrop-filter:none;padding:0}
-.intro h2,.end h2{font-size:64px;line-height:.98}
-.intro .body,.end .body{font-size:16.5px;color:#ddd2bd;max-width:470px}
-.hint{margin-top:26px;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;gap:10px}
+.versions summary::after{content:'';width:5px;height:5px;margin-left:10px;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;transform:translateY(-2px) rotate(45deg);transition:transform .25s}
+.versions[open] summary::after{transform:translateY(1px) rotate(-135deg)}
+.versions summary:hover{color:var(--ink-2)}
+.versions p{margin:8px 0 2px;font:400 15px/1.55 var(--read);color:var(--ink-2)}
+/* the opening and closing screens */
+.intro .card,.end .card{max-width:620px}
+.intro h2,.end h2{font-size:84px;line-height:.94;letter-spacing:-.015em}
+.intro .body,.end .body{font-size:19.5px;max-width:510px}
+.hint{margin-top:34px;font:500 11px/1 var(--ui);letter-spacing:.22em;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;gap:12px}
 .hint i{display:block;width:1px;height:34px;background:linear-gradient(var(--gold),transparent);animation:drip 2s infinite}
 @keyframes drip{0%{transform:scaleY(0);transform-origin:top}50%{transform:scaleY(1);transform-origin:top}51%{transform-origin:bottom}100%{transform:scaleY(0);transform-origin:bottom}}
-.ctas{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px}
-.cta{background:var(--gold);color:#160f04;border:0;border-radius:99px;padding:11px 20px;font-weight:600;cursor:pointer}
-.cta[disabled]{opacity:.75;cursor:default}
-.cta{text-decoration:none;display:inline-block}
-a.link{text-decoration:none;color:inherit;display:inline-block}
-a.st{display:block;text-decoration:none;color:inherit;transition:.2s}
-a.st:hover{background:rgba(255,255,255,.1)}
-.st-s b{color:var(--accent);font-weight:600}
+.ctas{display:flex;flex-wrap:wrap;gap:12px;margin-top:30px}
+.cta{display:inline-block;background:var(--gold);color:#160f04;border:0;border-radius:99px;padding:14px 26px;font:600 13.5px/1 var(--ui);letter-spacing:.02em;text-decoration:none;cursor:pointer;transition:filter .2s}
+.cta:hover{filter:brightness(1.08)}
 .cta span{font-weight:400;opacity:.7;margin-left:6px;font-size:12px}
-.ghost{background:transparent;border:1px solid var(--line);border-radius:99px;padding:11px 20px;cursor:pointer}
-.note{font-size:12.5px;color:var(--muted);margin-top:12px;min-height:1em}
-/* legend + stories */
-.legend{margin-top:14px}
-.lg-h,.st-head{font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
-.legend ul{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:3px 12px;font-size:13px}
-.legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:7px;vertical-align:-1px;box-shadow:0 0 6px rgba(255,255,255,.2)}
-#stories{margin-top:14px}
-.st{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-top:7px;background:rgba(255,255,255,.03)}
-.st.flag{border-color:var(--accent);background:rgba(255,255,255,.06)}
-.st.st-thread{border-style:dashed}
-.st-t{font-family:'Cormorant Garamond',serif;font-size:19px;font-weight:600;line-height:1.2}
-.st-d{font-size:13px;color:#d6cbb5}
-.st-s{font-size:11.5px;color:var(--muted);margin-top:3px}
-.badge{font-family:Inter,sans-serif;font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;background:var(--accent);color:#120d05;padding:2px 6px;border-radius:99px;vertical-align:3px;font-weight:600}
-/* map */
-nav.map{position:fixed;right:12px;top:50%;transform:translateY(-62%);z-index:15;display:flex;flex-direction:column;gap:0}
-.map button{width:24px;height:20px;background:none;border:0;position:relative;cursor:pointer;padding:0}
-.map button::before{content:'';position:absolute;left:50%;top:50%;width:5px;height:5px;margin:-2.5px;border-radius:50%;background:rgba(239,231,214,.35);transition:.3s}
-.map button.on::before{background:var(--accent);width:9px;height:9px;margin:-4.5px;box-shadow:0 0 10px var(--accent)}
-.map button span{position:absolute;right:28px;top:50%;transform:translateY(-50%);font-size:11px;letter-spacing:.06em;white-space:nowrap;color:var(--ink);opacity:0;transition:.3s;pointer-events:none;text-shadow:0 0 6px #000}
-.map button.on span,.map button:hover span,.map button:focus-visible span{opacity:1}
-.map .sep{height:1px;width:12px;margin:4px auto;background:var(--line)}
+.ghost{background:transparent;border:1px solid var(--line);border-radius:99px;padding:13px 24px;font:500 13.5px/1 var(--ui);cursor:pointer}
+.note{font:400 12.5px/1.5 var(--ui);color:var(--muted);margin-top:14px;min-height:1em}
+/* the oceans of Bhurloka */
+.legend{margin-top:26px}
+.legend ul{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:7px 18px;font:400 13.5px/1.4 var(--ui);color:var(--ink-2)}
+.legend i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:10px;box-shadow:0 0 0 1px rgba(255,255,255,.2)}
+/* stories set in Bharata */
+#stories{margin-top:28px}
+.st{display:block;padding:14px 0;border-bottom:1px solid var(--rule);text-decoration:none}
+.st:first-of-type{border-top:1px solid var(--rule)}
+.st-t{font:500 22px/1.15 var(--display);color:var(--ink)}
+.st-d{font:400 15px/1.5 var(--read);color:var(--ink-2);margin-top:3px}
+.st-s{display:flex;justify-content:space-between;gap:14px;font:400 12px/1.4 var(--ui);color:var(--muted);margin-top:7px}
+.st-s b{font-weight:500;color:var(--gold);white-space:nowrap}
+.st-s em{font-style:normal;color:var(--muted);white-space:nowrap}
+a.st:hover .st-t{color:var(--gold)}
+.st.st-thread{border-bottom-style:dashed}
+.badge{display:inline-block;font:500 11px/1 var(--ui);letter-spacing:.14em;text-transform:uppercase;color:var(--gold);border:1px solid var(--line);padding:4px 8px;border-radius:99px;vertical-align:5px;margin-left:10px}
+/* the rail: where you are among the fourteen worlds */
+nav.map{position:fixed;right:30px;top:50%;transform:translateY(-50%);z-index:15;display:flex;flex-direction:column;align-items:flex-end;padding:4px 16px 4px 0;border-right:1px solid var(--rule)}
+.rail-h{font:500 11px/1 var(--ui);letter-spacing:.2em;text-transform:uppercase;color:#8b7c58;margin:13px 0 5px;text-shadow:0 0 8px #000}
+.rail-h:first-child{margin-top:0}
+.rail-i{position:relative;background:none;border:0;padding:3px 0;min-height:14px;font:400 12px/1.3 var(--ui);color:#8a8272;cursor:pointer;text-align:right;white-space:nowrap;text-shadow:0 0 8px #000;transition:color .3s}
+.rail-i::after{content:'';position:absolute;top:50%;right:-19px;width:5px;height:5px;margin-top:-2.5px;border-radius:50%;background:#4d473a;transition:all .3s}
+.rail-i:hover{color:var(--ink-2)}
+.rail-i.on{color:var(--ink)}
+.rail-i.on::after{right:-21px;width:9px;height:9px;margin-top:-4.5px;background:var(--gold);box-shadow:0 0 10px rgba(227,185,100,.6)}
+.rail-i.end{margin-top:13px}
+@media (max-height:820px){.rail-i{padding:1.5px 0;font-size:11.5px}.rail-h{margin:9px 0 3px}}
+@media (max-height:660px){.rail-h{display:none}.rail-i:not(.on) span{display:none}}
+/* footer: credits for the texts and the imagery */
+.site-foot{position:relative;z-index:16;background:var(--bg);border-top:1px solid var(--rule);padding:64px 64px 36px;display:grid;grid-template-columns:1.1fr .8fr 1.5fr;gap:40px 56px;font:400 13px/1.65 var(--ui);color:var(--muted)}
+.site-foot .logo{display:block;margin-bottom:14px}
+.site-foot p{margin:0;max-width:320px}
+.site-foot ul{list-style:none;margin:0;padding:0}
+.site-foot li+li{margin-top:6px}
+.site-foot a{text-decoration:underline;text-decoration-color:rgba(232,196,120,.35);text-underline-offset:2px}
+.site-foot a:hover{color:var(--ink-2)}
+.sf-base{grid-column:1/-1;border-top:1px solid var(--rule);padding-top:20px;font-size:12px;color:var(--faint)}
 /* dial */
 .dial[hidden]{display:none}
 .dial{position:fixed;right:16px;bottom:16px;z-index:18;width:470px;background:var(--panel);border:1px solid var(--line);border-radius:18px;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);transition:box-shadow .4s}
@@ -135,44 +171,75 @@ nav.map{position:fixed;right:12px;top:50%;transform:translateY(-62%);z-index:15;
 .dial.collapsed{width:330px}
 .dial.collapsed .dial-full{display:none}
 .dial.collapsed .dial-mini{display:flex}
-/* read mode */
-body.read #gl,body.read #labels,body.read .vignette,body.read nav.map{display:none}
-body.read section.stop{min-height:0;padding:28px 24px;justify-content:center}
-body.read section.stop:first-child{padding-top:96px}
-body.read section.stop:last-child{padding-bottom:220px}
-body.read .card{opacity:1;transform:none;max-width:680px;width:100%;transition:none}
-body.read .intro .card,body.read .end .card{padding:0}
+/* read mode: the same text as a plain, centred document */
+body.read #gl,body.read #labels,body.read .vignette,body.read .scrim,body.read nav.map{display:none}
+body.read main{max-width:720px;margin:0 auto}
+body.read section.stop{min-height:0;display:block;padding:48px 24px 44px;border-bottom:1px solid var(--rule)}
+body.read section.stop:first-child{padding-top:112px}
+body.read section.stop:last-child{border-bottom:0;padding-bottom:96px}
+body.read .card{max-width:none}
+body.read .card>*{opacity:1;transform:none;transition:none}
+body.read .intro h2,body.read .end h2{font-size:64px}
 body.read .hint{display:none}
-@media (prefers-reduced-motion: reduce){.card{transition:opacity .3s}.hint i{animation:none}}
+@media (prefers-reduced-motion: reduce){.card>*{transform:none;transition:opacity .3s}.hint i{animation:none}}
+/* phones: the text sits in a short sheet at the bottom, so the world stays in view */
 @media (max-width:760px){
-  section.stop{align-items:flex-end;padding:76px 16px 92px}
-  .card{max-width:none;width:100%;padding:18px 18px 16px}
-  .card h2{font-size:32px}
-  .intro h2,.end h2{font-size:46px}
-  .intro .card,.end .card{background:linear-gradient(transparent,rgba(7,6,12,.7) 30%);padding:12px 0}
+  header{padding:0 16px;height:58px}
+  .logo{font-size:19px}
+  .scrim{display:none}
   nav.map{display:none}
+  section.stop{align-items:flex-end;padding:76px 10px 12px}
+  .card{max-width:none;background:rgba(9,8,15,.86);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid var(--rule);border-radius:20px;padding:20px 20px 16px}
+  .kicker{margin-bottom:10px}
+  .card h2{font-size:40px}
+  .body{margin-top:14px;font-size:16.5px}
+  .stop:not(.intro):not(.end) .card:not(.open) .body{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden}
+  .stop:not(.intro):not(.end) .card:not(.open) .x-more{display:none}
+  .more-btn{display:inline-flex;align-items:center;gap:8px;margin-top:10px;padding:6px 0;background:none;border:0;font:500 12.5px/1 var(--ui);letter-spacing:.04em;color:var(--gold);cursor:pointer}
+  .more-btn::after{content:'';width:5px;height:5px;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;transform:translateY(-2px) rotate(45deg);transition:transform .25s}
+  .card.open .more-btn::after{transform:translateY(1px) rotate(-135deg)}
+  .intro .card,.end .card{background:linear-gradient(rgba(7,6,12,0),rgba(7,6,12,.88) 22%);border:0;backdrop-filter:none;-webkit-backdrop-filter:none;border-radius:0;padding:28px 8px 10px}
+  .intro h2,.end h2{font-size:50px}
+  .intro .body,.end .body{font-size:17px}
   .intro .body p:nth-of-type(2){display:none}
-  .intro .card{background:linear-gradient(rgba(7,6,12,0),rgba(7,6,12,.85) 25%)}
-  .wt{display:none}
+  .stories-here,.meta,#stories,.legend{margin-top:20px}
+  .site-foot{grid-template-columns:1fr;gap:28px;padding:44px 22px 28px}
+  body.read .card{background:none;border:0;backdrop-filter:none;-webkit-backdrop-filter:none;padding:0}
+  body.read .card .body{display:block}
+  body.read .card .x-more{display:block}
+  body.read .more-btn{display:none}
   .dial,.dial.collapsed{left:12px;right:12px;bottom:12px;width:auto}
   .dial-full{flex-direction:column;align-items:stretch;max-height:72vh;overflow:auto;padding:12px 14px}
   .dial svg{width:140px;height:140px;margin:0 auto;order:2}
   .dial-info{order:1}
-  .legend ul{grid-template-columns:1fr 1fr}
 }
 </style>
 </head>
 <body>
 <canvas id="gl" aria-hidden="true"></canvas>
 <div class="vignette"></div>
+<div class="scrim" aria-hidden="true"></div>
+<div class="scrim r" aria-hidden="true"></div>
 <div id="labels" aria-hidden="true"></div>
 <div class="progress" id="progress"></div>
 <header>
-  <div class="brand"><span class="logo">LOKA</span><span class="wt">working title · prototype</span></div>
-  <div class="hbtns"><button id="readBtn" class="hbtn" aria-pressed="false">Read mode</button></div>
+  <span class="logo">LOKA</span>
+  <button id="readBtn" class="hbtn" aria-pressed="false" aria-label="Read mode: show the text as a page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 5.5c3-1.3 6-1.3 9 0v14c-3-1.3-6-1.3-9 0z"/><path d="M21 5.5c-3-1.3-6-1.3-9 0v14c3-1.3 6-1.3 9 0z"/></svg>Read</button>
 </header>
-<nav class="map" id="map" aria-label="Jump to a world"></nav>
+<nav class="map" id="map" aria-label="The fourteen worlds"></nav>
 <main id="story"></main>
+<footer class="site-foot">
+  <div><span class="logo">LOKA</span><p>An explorable universe of Hindu mythology, drawn from the Puranas and the epics. This is an early preview.</p></div>
+  <div><div class="label">Texts</div><ul><li>Vishnu Purana</li><li>Bhagavata Purana</li><li>Mahabharata</li><li>Valmiki Ramayana</li></ul></div>
+  <div><div class="label">Imagery</div><ul>
+    <li>Night sky: <a href="https://svs.gsfc.nasa.gov/4851" target="_blank" rel="noopener">Deep Star Maps 2020</a>, NASA/Goddard Scientific Visualization Studio</li>
+    <li>Land and rock textures: <a href="https://polyhaven.com" target="_blank" rel="noopener">Poly Haven</a>, CC0</li>
+    <li>Water: three.js example textures, MIT</li>
+    <li>Shesha’s heads: <a href="https://sketchfab.com/3d-models/king-cobra-a8dab84cd4fc428bbcfe194e3ac14d06" target="_blank" rel="noopener">“King Cobra”</a> by Anthony Yanez, <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>, cut and retinted</li>
+    <li>Rendering: <a href="https://threejs.org" target="_blank" rel="noopener">three.js</a>, MIT</li>
+  </ul></div>
+  <div class="sf-base">© 2026 Loka</div>
+</footer>
 
 <aside class="dial" id="dial" aria-label="Time dial: the four ages">
   <div class="dial-full">
@@ -258,9 +325,9 @@ const OCEANS = [['Salt','#2a7fa8'],['Sugarcane juice','#b8c56a'],['Wine','#8a2a4
 
 const STOPS = [
   { id:'intro', nav:'The cosmic egg', grp:'a', cls:'intro', y:-50, dist:700, h:30, ang:-0.5, fog:0.0004,
-    kicker:'Prototype · the cosmos homepage', title:'Fourteen worlds.<br>One universe.',
-    body:`<p>The Puranas picture the universe as an egg with fourteen worlds stacked inside it: seven rising from the earth, and seven below it.</p><p>Scroll to fall through them, from Brahma’s world down to the serpent who holds them all.</p><div class="hint"><i></i>Scroll to descend</div>`,
-    src:'Vishnu Purana 2.2–2.7 · Bhagavata Purana 5.16–5.25 · Sky: the real night sky, from NASA/Goddard Scientific Visualization Studio, Deep Star Maps 2020' },
+    kicker:'The Puranic cosmos', title:'Fourteen worlds.<br>One universe.',
+    body:`<p>A map of the universe as the Puranas describe it: an egg that holds fourteen worlds, seven rising from the earth and seven below it.</p><p>Scroll to fall through them, from Brahma’s world down to the serpent who holds them all.</p><div class="hint"><i></i>Scroll to descend</div>`,
+    src:'Vishnu Purana 2.2–2.7 · Bhagavata Purana 5.16–5.25' },
 
   { id:'satya', nav:'Satyaloka', grp:'up', y:6*S, dist:52, h:18, ang:.35, fog:.008,
     kicker:'Upper world 7 of 7 · the highest', title:'Satyaloka', deva:'सत्यलोक', iast:'Satyaloka · also Brahmaloka',
@@ -289,12 +356,12 @@ const STOPS = [
     body:`<p>The open sky between the earth and the sun, where siddhas and sages travel.</p>`,
     src:'Vishnu Purana 2.7' },
 
-  { id:'bhu', nav:'Bhurloka · Earth', grp:'earth', y:0, dist:122, h:86, ang:2.85, fog:.0035,
+  { id:'bhu', nav:'Bhurloka · Earth', rail:'Bhurloka', grp:'earth', y:0, dist:122, h:86, ang:2.85, fog:.0035,
     kicker:'Upper world 1 of 7 · Earth', title:'Bhurloka', deva:'भूर्लोक', iast:'Bhūrloka · Bhū-maṇḍala',
     body:`<p>In the Puranas, the earth is a lotus. Mount Meru is its seed-cup, and it is wider at the summit than at the base.</p><p>Around it lie seven ring-shaped continents: Jambu, Plaksha, Shalmali, Kusha, Krauncha, Shaka and Pushkara. An ocean circles each one. Beyond the last ocean rise the Lokaloka mountains, where light ends.</p>`,
     versions:'Four mountains brace Meru on each side. The Vishnu Purana (2.2) names them Mandara, Gandhamadana, Vipula and Suparshva; the Bhagavata (5.16) gives a different list.',
-    extra:`<div class="legend"><div class="lg-h">The seven oceans, inside to out</div><ul>${OCEANS.map(o=>`<li><i style="background:${o[1]}"></i>${o[0]}</li>`).join('')}</ul></div>`,
-    src:'Vishnu Purana 2.2, 2.4 · Textures: Poly Haven (CC0), three.js water normals (MIT)' },
+    extra:`<div class="legend"><div class="label">The seven oceans, inside to out</div><ul>${OCEANS.map(o=>`<li><i style="background:${o[1]}"></i>${o[0]}</li>`).join('')}</ul></div>`,
+    src:'Vishnu Purana 2.2, 2.4' },
   { id:'bharata', nav:'Bharata', grp:'earth', y:0, dist:44, h:20, ang:Math.PI, fog:.005, look:[0,3,-4],
     kicker:'Jambudvipa · the southern land', title:'Bharata', deva:'भारतवर्ष', iast:'Bhāratavarṣa',
     body:`<p>South of the Himalaya lies Bharata. The Vishnu Purana calls it the land of action: the one place where deeds bear fruit. Every age’s stories play out here.</p>`,
@@ -341,7 +408,7 @@ const STOPS = [
     kicker:'Beneath all worlds', title:'Ananta Shesha', deva:'अनन्त शेष', iast:'Ananta Śeṣa',
     body:`<p>Below everything lies Ananta, the endless serpent. The Bhagavata says the whole universe rests on one of his thousand hoods like a mustard seed. Vishnu sleeps on his coils.</p><p>Many traditions say he came to earth as Lakshmana, and again as Balarama.</p>`,
     links:[{label:'Lakshmana', yuga:1},{label:'Balarama', yuga:2}],
-    src:'Bhagavata Purana 5.25 · Vishnu Purana 2.5 · Heads: <a href="https://sketchfab.com/3d-models/king-cobra-a8dab84cd4fc428bbcfe194e3ac14d06" target="_blank" rel="noopener">“King Cobra”</a> by Anthony Yanez, <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>, cut and retinted' },
+    src:'Bhagavata Purana 5.25 · Vishnu Purana 2.5' },
 
   { id:'end', nav:'A day of Brahma', grp:'z', cls:'end', y:-50, dist:860, h:-40, ang:7.0, fog:.0004,
     kicker:'And then', title:'A day of Brahma.',
@@ -354,27 +421,29 @@ const STOPS = [
 /* DOM                                                                */
 /* ------------------------------------------------------------------ */
 const storyEl = document.getElementById('story');
+// a story told in this world: a link once it's written, a quiet "coming soon" until then
 function linkHTML(l){
-  if(l.href) return `<a class="link" href="${l.href}">${l.label}${l.note?` <span>· ${l.note} →</span>`:''}</a>`;
-  if(!SHOW_TIME) return `<button class="link" disabled>${l.label}${l.yuga!=null?` <span>· ${YUGAS[l.yuga].name} yuga</span>`:''}</button>`;
-  const y = l.yuga!=null ? ` data-yuga="${l.yuga}"` : ' disabled';
-  const t = l.thread ? ' data-thread="1"' : '';
-  const tag = l.yuga!=null ? ` <span>· ${YUGAS[l.yuga].name} yuga</span>` : '';
-  return `<button class="link"${y}${t}>${l.label}${tag}</button>`;
+  if(l.href) return `<li><a class="story" href="${l.href}"><span class="story-t">${l.label}</span><span class="story-m">${l.note||'Read'} →</span></a></li>`;
+  const age = l.yuga!=null ? `${YUGAS[l.yuga].name} yuga` : '';
+  if(!SHOW_TIME || l.yuga==null) return `<li><div class="story"><span class="story-t">${l.label}</span><span class="story-m">${age?age+' · ':''}Coming soon</span></div></li>`;
+  return `<li><button class="story" data-yuga="${l.yuga}"${l.thread?' data-thread="1"':''}><span class="story-t">${l.label}</span><span class="story-m">${age} →</span></button></li>`;
 }
 STOPS.forEach(s=>{
   const sec = document.createElement('section');
   sec.className = 'stop' + (s.cls ? ' '+s.cls : '');
   sec.id = 's-'+s.id;
+  const world = !s.cls, iast = s.iast && s.iast!==s.title ? s.iast : '';   // the transliteration only when it adds something
   sec.innerHTML = `<div class="card">
     ${s.kicker?`<div class="kicker">${s.kicker}</div>`:''}
-    <h2>${s.title}${s.deva?`<span class="deva" lang="sa">${s.deva}</span>`:''}</h2>
-    ${s.iast?`<div class="iast">${s.iast}</div>`:''}
+    <h2>${s.title}</h2>
+    ${s.deva||iast?`<div class="names">${s.deva?`<span class="deva" lang="sa">${s.deva}</span>`:''}${iast?`<span class="iast">${iast}</span>`:''}</div>`:''}
     <div class="body">${s.body}</div>
-    ${s.extra||''}
-    ${s.links?`<div class="links">${s.links.map(linkHTML).join('')}</div>`:''}
-    ${s.versions?`<details class="versions"${mobile.matches?'':' open'}><summary>Versions</summary>${s.versions}</details>`:''}
-    ${s.src?`<p class="src">${s.src}</p>`:''}
+    ${world?`<button class="more-btn" aria-expanded="false">Read more</button>`:''}
+    <div class="x-more">
+      ${s.extra||''}
+      ${s.links?`<div class="stories-here"><div class="label">Stories here</div><ul>${s.links.map(linkHTML).join('')}</ul></div>`:''}
+      ${s.src||s.versions?`<div class="meta">${s.src?`<p class="src"><b>Sources</b>${s.src}</p>`:''}${s.versions?`<details class="versions"><summary><b>Versions</b>The texts differ here</summary><p>${s.versions}</p></details>`:''}</div>`:''}
+    </div>
   </div>`;
   storyEl.appendChild(sec);
 });
@@ -385,23 +454,26 @@ sections.forEach(s=>io.observe(s));
 
 // minimap
 const mapEl = document.getElementById('map'); const dots=[]; let prevGrp=null;
+const GROUPS={up:'Upper worlds',earth:'Earth',low:'Lower worlds',base:'Beneath'};
 STOPS.forEach((s,i)=>{
-  if(prevGrp && s.grp!==prevGrp){ const d=document.createElement('div'); d.className='sep'; mapEl.appendChild(d); }
+  if(s.grp!==prevGrp && GROUPS[s.grp]){ const h=document.createElement('div'); h.className='rail-h'; h.setAttribute('aria-hidden','true'); h.textContent=GROUPS[s.grp]; mapEl.appendChild(h); }
   prevGrp=s.grp;
-  const b=document.createElement('button'); b.innerHTML=`<span>${s.nav}</span>`; b.setAttribute('aria-label',s.nav);
+  const b=document.createElement('button'); b.className='rail-i'+(s.grp==='z'?' end':''); b.innerHTML=`<span>${s.rail||s.nav}</span>`; b.setAttribute('aria-label',s.nav);
   b.addEventListener('click',()=>window.scrollTo({top:anchors[i],behavior:reduce?'auto':'smooth'}));
   mapEl.appendChild(b); dots.push(b);
 });
 
 // read mode
 const readBtn=document.getElementById('readBtn');
-function setRead(on){ document.body.classList.toggle('read',on); readBtn.setAttribute('aria-pressed',on); try{localStorage.setItem('loka-read',on?'1':'0')}catch(e){} requestAnimationFrame(measure); }
+function setRead(on){ document.body.classList.toggle('read',on); if(on) document.querySelectorAll('.versions').forEach(d=>d.open=true); readBtn.setAttribute('aria-pressed',on); try{localStorage.setItem('loka-read',on?'1':'0')}catch(e){} requestAnimationFrame(measure); }
 readBtn.addEventListener('click',()=>setRead(!document.body.classList.contains('read')));
 try{ if(localStorage.getItem('loka-read')==='1') setRead(true); }catch(e){}
 
 document.addEventListener('click',e=>{
-  if(e.target.id==='waitBtn'){ document.getElementById('waitNote').textContent='Prototype only: no emails are collected yet.'; }
-  const l=e.target.closest('.link[data-yuga]');
+  if(e.target.id==='waitBtn'){ document.getElementById('waitNote').textContent='The waitlist opens soon.'; }
+  const mb=e.target.closest('.more-btn');
+  if(mb){ const c=mb.closest('.card'), open=c.classList.toggle('open'); mb.setAttribute('aria-expanded',open); mb.textContent=open?'Show less':'Read more'; }
+  const l=e.target.closest('.story[data-yuga]');
   if(l){ if(l.dataset.thread){ threadToggle.checked=true; onThread(); } setYuga(+l.dataset.yuga); pulseDial(); }
 });
 
@@ -456,11 +528,12 @@ function setYuga(i){
   if(yT){ yT.color.set(y.tint); yT.bg.set(y.bg); yT.dharma=y.legs/4; if(yT.nebA){ yT.nebA.set(NEB[yIdx][0]); yT.nebB.set(NEB[yIdx][1]); } }
   renderStories();
 }
-const storyCard=(s,age)=>{ const tag=s.href?'a':'div'; return `<${tag} class="st${s.flag?' flag':''}"${s.href?` href="${s.href}"`:''}><div class="st-t">${s.t}${s.flag?' <span class="badge">Flagship saga</span>':''}</div><div class="st-d">${s.d}</div><div class="st-s">${age?age+' · ':''}${s.s}${s.href?' · <b>Read the saga →</b>':''}</div></${tag}>`; };
+const storyCard=(s,age,soon=true)=>{ const tag=s.href?'a':'div'; return `<${tag} class="st${s.flag?' flag':''}"${s.href?` href="${s.href}"`:''}><div class="st-t">${s.t}${s.flag?' <span class="badge">Flagship saga</span>':''}</div><div class="st-d">${s.d}</div><div class="st-s"><span>${age?age+' · ':''}${s.s}</span>${s.href?'<b>Read the saga →</b>':soon?'<em>Coming soon</em>':''}</div></${tag}>`; };
 function renderStories(){
   const box=$('stories'); if(!box) return; const y=YUGAS[yIdx];
-  if(!SHOW_TIME){ box.innerHTML=`<div class="st-head">Stories set in Bharata</div>`+YUGAS.map(Y=>storyCard(Y.stories[0],Y.name+' yuga')).join(''); return; }
-  box.innerHTML=`<div class="st-head">Stories in the ${y.name} yuga</div>`+
+  if(!SHOW_TIME){ const live=YUGAS.some(Y=>Y.stories[0].href);   // until a story is live, say "coming soon" once, not on every row
+    box.innerHTML=`<div class="label">Stories set in Bharata${live?'':' · coming soon'}</div>`+YUGAS.map(Y=>storyCard(Y.stories[0],Y.name+' yuga',live)).join(''); return; }
+  box.innerHTML=`<div class="label">Stories in the ${y.name} yuga</div>`+
     y.stories.map(s=>{ const tag=s.href?'a':'div'; return `<${tag} class="st${s.flag?' flag':''}"${s.href?` href="${s.href}"`:''}><div class="st-t">${s.t}${s.flag?' <span class="badge">Flagship saga</span>':''}</div><div class="st-d">${s.d}</div><div class="st-s">${s.s}${s.href?' · <b>Read the saga →</b>':''}</div></${tag}>`; }).join('')+
     (threadOn?`<div class="st st-thread"><div class="st-t">Jaya &amp; Vijaya, in this age</div><div class="st-d">${y.thread}</div><div class="st-s">Bhagavata Purana 3.15–3.16, 7.1</div></div>`:'');
 }
@@ -497,7 +570,7 @@ let lastActive=-1;
 function onScroll(){
   const max=document.documentElement.scrollHeight-innerHeight;
   $('progress').style.width=(max>0?scrollY/max*100:0)+'%';
-  const a=activeIndex(scrollY); if(a!==lastActive){ dots.forEach((d,i)=>d.classList.toggle('on',i===a)); lastActive=a; }
+  const a=activeIndex(scrollY); if(a!==lastActive){ dots.forEach((d,i)=>{ d.classList.toggle('on',i===a); if(i===a) d.setAttribute('aria-current','true'); else d.removeAttribute('aria-current'); }); lastActive=a; }
 }
 addEventListener('scroll',onScroll,{passive:true}); onScroll();
 
