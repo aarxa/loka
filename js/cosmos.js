@@ -53,7 +53,8 @@ const SKY=lowTier?'2k':'4k';
 const skyTex=new THREE.Texture();
 const skyListeners=[]; const onSky=t=>skyListeners.forEach(f=>f(t));   // things that reflect the real sky
 const SKYFN=`vec3 skyAt(sampler2D sky, vec3 d){ float ra=atan(-d.z,d.x), dec=asin(clamp(d.y,-1.0,1.0)); return texture2D(sky,vec2(0.5-ra/6.2831853,0.5+dec/3.1415927)).rgb; }`;
-new THREE.TextureLoader().load(`assets/sky/starmap-${SKY}.jpg`,
+// the sky image has its brightest stars painted out (tools/sky_background.py); they're drawn below as crisp points
+new THREE.TextureLoader().load(`assets/sky/sky-${SKY}.jpg`,
   t=>{ t.colorSpace=THREE.SRGBColorSpace; t.generateMipmaps=false; t.minFilter=THREE.LinearFilter; t.wrapS=THREE.RepeatWrapping; skyMat.uniforms.map.value=t; onSky(t); },
   undefined, e=>console.error('sky map not loaded',e));
 const skyMat=new THREE.ShaderMaterial({
@@ -62,21 +63,24 @@ const skyMat=new THREE.ShaderMaterial({
   vertexShader:`varying vec3 vDir; void main(){ vDir=position; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
   fragmentShader:`uniform sampler2D map; uniform vec2 texel; uniform float time,intensity,gain,neb; uniform vec3 tint,nebA,nebB; varying vec3 vDir;
   ${NOISE}
+  // smooth (B-spline) sampling from four bilinear reads, so the faint stars left in the map stay round, not square
+  vec4 cubicW(float v){ vec4 n=vec4(1.0,2.0,3.0,4.0)-v; vec4 s=n*n*n; float x=s.x, y=s.y-4.0*s.x, z=s.z-4.0*s.y+6.0*s.x; return vec4(x,y,z,6.0-x-y-z)/6.0; }
+  vec3 bicubic(vec2 uv){ vec2 st=uv/texel-0.5, f=fract(st); st-=f; vec4 xc=cubicW(f.x), yc=cubicW(f.y);
+    vec4 c=st.xxyy+vec2(-0.5,1.5).xyxy, s=vec4(xc.xz+xc.yw,yc.xz+yc.yw), o=(c+vec4(xc.yw,yc.yw)/s)*texel.xxyy;
+    vec3 s0=texture2D(map,o.xz).rgb, s1=texture2D(map,o.yz).rgb, s2=texture2D(map,o.xw).rgb, s3=texture2D(map,o.yw).rgb;
+    float sx=s.x/(s.x+s.y), sy=s.z/(s.z+s.w); return mix(mix(s3,s2,sx),mix(s1,s0,sx),sy); }
   void main(){
     vec3 d=normalize(vDir);
     // celestial coordinates: north celestial pole on the cosmic axis (+y); RA increases to the left, as seen from inside
     float ra=atan(-d.z,d.x), dec=asin(clamp(d.y,-1.0,1.0));
     vec2 uv=vec2(0.5-ra/6.2831853, 0.5+dec/3.1415927);
-    vec3 c=texture2D(map,uv).rgb;
-    // split the map into the soft Milky Way glow and sharp star points
-    vec2 o=texel*3.0;
-    vec3 glow=min(min(min(texture2D(map,uv+vec2(o.x,0.0)).rgb,texture2D(map,uv-vec2(o.x,0.0)).rgb),min(texture2D(map,uv+vec2(0.0,o.y)).rgb,texture2D(map,uv-vec2(0.0,o.y)).rgb)),
-                  min(min(texture2D(map,uv+o).rgb,texture2D(map,uv-o).rgb),min(texture2D(map,uv+vec2(o.x,-o.y)).rgb,texture2D(map,uv-vec2(o.x,-o.y)).rgb)));
-    glow=min(glow,c);   // a min-filter keeps the diffuse Milky Way and drops the point stars
+    vec3 c=bicubic(uv);
+    // split what's left into the soft Milky Way glow and its faint grain of stars, and keep the grain gentle
+    vec2 o=texel*2.0;
+    vec3 glow=min(min(min(texture2D(map,uv+o).rgb,texture2D(map,uv-o).rgb),min(texture2D(map,uv+vec2(o.x,-o.y)).rgb,texture2D(map,uv-vec2(o.x,-o.y)).rgb)),c);
     vec3 pts=max(c-glow,0.0);
-    float pl=dot(pts,vec3(0.2126,0.7152,0.0722));
     glow=max(glow-vec3(0.0009),0.0);                                     // black point: deep space stays black
-    c = glow*gain*1.25 + pow(pts,vec3(1.5))*gain*1.6;                      // faint stars and Milky Way; bright stars are drawn as points   // crisp stars; the brightest pass 1.0 and bloom
+    c = glow*gain*1.25 + pow(pts,vec3(1.35))*gain*2.2;
     float n=fbm(d*2.1+vec3(0.0,time*0.004,0.0)), n2=fbm(d*4.7-vec3(time*0.003));
     float m=smoothstep(0.48,0.86,n)*(0.35+0.65*n2);
     vec3 nc=mix(nebA,nebB,smoothstep(0.3,0.7,n2))*m*neb;  // faint nebula haze, tinted by the age
@@ -85,7 +89,7 @@ const skyMat=new THREE.ShaderMaterial({
   side:THREE.BackSide, depthWrite:false, depthTest:false, fog:false });
 const sky=new THREE.Mesh(new THREE.SphereGeometry(3000,64,32),skyMat); sky.renderOrder=-10; scene.add(sky);
 
-// the brightest 7,000 real stars, drawn as crisp points (positions and colours extracted from the NASA map)
+// the 16,000 brightest real stars, drawn as crisp points with a soft round glow (positions and colours extracted from the NASA map)
 const starU={ time:{value:0}, pr:{value:renderer.getPixelRatio()} };
 const starsGroup=new THREE.Group(); scene.add(starsGroup);
 // stars.bin: 8 bytes a star, little-endian: RA (uint16, 0–360°), Dec (int16, ±90°), brightness, red, green, blue (uint8 each)
@@ -97,15 +101,17 @@ fetch('assets/sky/stars.bin').then(r=>{ if(!r.ok) throw new Error(r.status); ret
   const g=new THREE.BufferGeometry(); g.setAttribute('position',new THREE.BufferAttribute(pos,3)); g.setAttribute('tint',new THREE.BufferAttribute(col,3));
   g.setAttribute('bright',new THREE.BufferAttribute(br,1)); g.setAttribute('seed',new THREE.BufferAttribute(sd,1));
   const m=new THREE.ShaderMaterial({ uniforms:starU,
-    vertexShader:`attribute float bright, seed; attribute vec3 tint; uniform float time, pr; varying vec3 vC; varying float vA;
-      void main(){ vC=tint; float tw=0.82+0.18*sin(time*(1.3+seed*2.6)+seed*40.0);
-        vA=(0.16+3.2*bright*bright*bright)*mix(1.0,tw,smoothstep(0.2,0.6,bright));
+    // a sharp core sized by brightness, inside a larger sprite that carries a soft round glow for the brighter stars
+    vertexShader:`attribute float bright, seed; attribute vec3 tint; uniform float time, pr; varying vec3 vC; varying float vA, vCore, vGlow;
+      void main(){ vC=tint; float b=bright, tw=0.82+0.18*sin(time*(1.3+seed*2.6)+seed*40.0);
+        float core=1.3+3.2*b*b, spread=1.0+5.0*b*b*b*b;
+        vA=(0.12+2.6*b*b*b)*mix(1.0,tw,smoothstep(0.2,0.6,b)); vCore=1.0/spread; vGlow=0.34*smoothstep(0.5,1.0,b);
         gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);
-        gl_PointSize=(1.4+5.5*bright*bright)*pr; }`,
-    fragmentShader:`varying vec3 vC; varying float vA;
+        gl_PointSize=core*spread*pr; }`,
+    fragmentShader:`varying vec3 vC; varying float vA, vCore, vGlow;
       void main(){ vec2 d=gl_PointCoord-0.5; float r=length(d)*2.0; if(r>1.0) discard;
-        float core=exp(-r*r*14.0), halo=exp(-r*5.0)*0.18;
-        gl_FragColor=vec4(vC*(core+halo)*vA,1.0); }`,
+        float rc=r/vCore, core=exp(-rc*rc*2.5), glow=pow(1.0-r,3.0)*vGlow;
+        gl_FragColor=vec4(vC*(core+glow)*vA,1.0); }`,
     blending:AD, depthWrite:false, depthTest:true, transparent:true });
   const pts=new THREE.Points(g,m); pts.frustumCulled=false; pts.renderOrder=-9; starsGroup.add(pts);
 }).catch(e=>console.error('star list not loaded',e));
@@ -503,7 +509,7 @@ if(lowTier) bloom.resolution.set(innerWidth/2,innerHeight/2);
 composer.addPass(bloom);
 composer.addPass(new OutputPass());
 const finish=new ShaderPass({
-  uniforms:{ tDiffuse:{value:null}, time:{value:0}, grain:{value:lowTier?.035:.045}, vig:{value:.55}, ca:{value:lowTier?0:.006},
+  uniforms:{ tDiffuse:{value:null}, time:{value:0}, grain:{value:lowTier?.035:.045}, vig:{value:.55}, ca:{value:lowTier?0:.0018},
              flash:{value:0}, flashCol:{value:new THREE.Color('#ffe2a8')}, res:{value:new THREE.Vector2(innerWidth,innerHeight)} },
   vertexShader:`varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
   fragmentShader:`uniform sampler2D tDiffuse; uniform float time,grain,vig,ca,flash; uniform vec3 flashCol; uniform vec2 res; varying vec2 vUv;

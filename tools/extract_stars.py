@@ -37,7 +37,7 @@ for dy in range(-2, 3):
         if abs(dy) <= 1 and abs(dx) <= 1:
             col += linp[ys + 2 + dy, xs + 2 + dx]
 
-order = np.argsort(-flux)[:60000]
+order = np.argsort(-flux)[:max(60000, N * 4)]
 # non-maximum suppression on the sphere: saturated stars have flat tops, and near the poles one star
 # smears across many pixels, so keep one detection per star by angular distance
 rad = np.radians
