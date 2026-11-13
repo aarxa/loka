@@ -55,7 +55,7 @@ export const STOPS = [
     src:'Vishnu Purana 2.7' },
   { id:'tapa', nav:'Tapoloka', grp:'up', y:5*S, dist:56, h:16, ang:.8, fog:.008,
     kicker:'Upper world 6 of 7', title:'Tapoloka', deva:'तपोलोक', iast:'Tapoloka',
-    body:`<p>Home of the Vairaja gods, who cannot be burned by the fire that ends the world.</p>`,
+    body:`<p>Home of the Vaibhraja gods, who cannot be burned by the fire that ends the world.</p>`,
     src:'Vishnu Purana 2.7' },
   { id:'jana', nav:'Janaloka', grp:'up', y:4*S, dist:60, h:16, ang:1.25, fog:.008,
     kicker:'Upper world 5 of 7', title:'Janaloka', deva:'जनलोक', iast:'Janaloka',
@@ -65,7 +65,8 @@ export const STOPS = [
   { id:'mahar', nav:'Maharloka', grp:'up', y:3*S, dist:62, h:16, ang:1.7, fog:.008,
     kicker:'Upper world 4 of 7', title:'Maharloka', deva:'महर्लोक', iast:'Maharloka',
     body:`<p>Above the pole star. Those who live here last through an entire day of Brahma. When the fires of dissolution rise, they withdraw upward to Janaloka.</p>`,
-    src:'Vishnu Purana 2.7, 6.3' },
+    versions:'The Vayu Purana, the most detailed account of these worlds, makes Maharloka the home of the rulers of the kalpa; a commentator names them as Bhrigu and the other patriarchs.',
+    src:'Vishnu Purana 1.3, 2.7' },
   { id:'svar', nav:'Svarloka', grp:'up', y:2*S, dist:66, h:18, ang:2.1, fog:.008,
     kicker:'Upper world 3 of 7', title:'Svarloka', deva:'स्वर्लोक', iast:'Svarloka · Svarga',
     body:`<p>Svarga, the heaven of Indra and the devas, which stretches from the sun up to Dhruva, the pole star.</p><p>Dhruva was once a five-year-old boy. His devotion earned him the one fixed point the whole sky turns around.</p>`,
@@ -79,7 +80,7 @@ export const STOPS = [
   { id:'bhu', nav:'Bhurloka · Earth', rail:'Bhurloka', grp:'earth', y:0, dist:122, h:86, ang:2.85, fog:.0035,
     kicker:'Upper world 1 of 7 · Earth', title:'Bhurloka', deva:'भूर्लोक', iast:'Bhūrloka · Bhū-maṇḍala',
     body:`<p>In the Puranas, the earth is a lotus. Mount Meru is its seed-cup, and it is wider at the summit than at the base.</p><p>Around it lie seven ring-shaped continents: Jambu, Plaksha, Shalmali, Kusha, Krauncha, Shaka and Pushkara. An ocean circles each one. Beyond the last ocean rise the Lokaloka mountains, where light ends.</p>`,
-    versions:'Four mountains brace Meru on each side. The Vishnu Purana (2.2) names them Mandara, Gandhamadana, Vipula and Suparshva; the Bhagavata (5.16) gives a different list.',
+    versions:'Four mountains brace Meru on each side. The Vishnu Purana (2.2) names them Mandara, Gandhamadana, Vipula and Suparshva; the Bhagavata (5.16) gives a different list.</p><p>Jain and Buddhist cosmology share this picture. Jain texts set Meru at the center of Jambudvipa, ringed by oceans and continents in turn; Buddhist texts ring Meru with seven golden mountain ranges and seas, with the continents in the ocean beyond and Jambudvipa to the south.',
     extra:`<div class="legend"><div class="label">The seven oceans, inside to out</div><ul>${OCEANS.map(o=>`<li><i style="background:${o[1]}"></i>${o[0]}</li>`).join('')}</ul></div>`,
     src:'Vishnu Purana 2.2, 2.4' },
   { id:'bharata', nav:'Bharata', grp:'earth', y:0, dist:44, h:20, ang:Math.PI, fog:.005, look:[0,3,-4],
@@ -149,7 +150,7 @@ export const DEEP = {
     <p>The names, the order, the egg, Mount Meru wider at its summit than its base, the seven ring-shaped oceans and Ananta Shesha holding it all up come from the texts. The look of each world as a glowing galaxy, the glass of the egg, the colors and the spacing are this map’s own. The real proportions are far too vast to draw.</p>`,
   satya:`<p>Also called Brahmaloka, this is the seat of Brahma, the creator, at the top of the egg. The Vishnu Purana places it high above Dhruva, beyond Mahar, Jana and Tapa, and says those who reach it never again know death.</p>
     <p>Many traditions add that when Brahma’s life of a hundred years comes to an end, those who live here are freed along with him instead of being born again.</p>`,
-  tapa:`<p><i>Tapas</i> means heat, and the inner heat of austerity: the discipline that, in these stories, gives sages and even gods their power. The Vairaja gods who live here are beyond the reach of the fire that ends each day of Brahma.</p>`,
+  tapa:`<p><i>Tapas</i> means heat, and the inner heat of austerity: the discipline that, in these stories, gives sages and even gods their power. The Vaibhrajas who live here (other texts call them Vairajas) are beyond the reach of the fire that ends each day of Brahma.</p>`,
   jana:`<p><i>Jana</i> means people, or beings. The best-known residents are the four Kumaras, Sanaka, Sanandana, Sanatana and Sanatkumara: sons born from Brahma’s mind who chose to stay children forever, given to study and meditation.</p>
     <p>Their visit to Vaikuntha, Vishnu’s own realm, sets off one of the longest arcs in the Puranas. The doorkeepers Jaya and Vijaya turn them away, the Kumaras curse them to be born on earth, and the two return three times as Vishnu’s enemies, first as Hiranyaksha and Hiranyakashipu.</p>`,
   mahar:`<p><i>Mahar</i> means great. When the fire that ends a day of Brahma consumes the three worlds below, its heat reaches up here, and the residents withdraw to Janaloka until the next day begins.</p>`,
@@ -176,3 +177,89 @@ export const DEEP = {
   end:`<p>Time in the Puranas runs in cycles. The four ages, from Satya down to Kali, make one great age of 4.32 million years. A thousand great ages make a single day of Brahma, a <i>kalpa</i>, and his night lasts as long. At nightfall the three worlds dissolve, and at dawn they are made again.</p>
     <p>Brahma lives a hundred years of such days and nights. When his life ends, the whole egg dissolves back into its source, and in time a new one forms.</p>`,
 };
+
+// Quotes, word for word, from H. H. Wilson's translation of the Vishnu Purana (1840, public domain).
+// Wilson's footnote markers are left out, and his spellings and accents are kept. Worlds the Vishnu Purana
+// doesn't describe on their own have no quote: the readable English Bhagavatas are still in copyright.
+const VP = n=>`Vishnu Purana ${n} · tr. H. H. Wilson, 1840`;
+export const QUOTES = {
+  intro:{ text:'The world is encompassed on every side and above and below by the shell of the egg of Brahmá, in the same manner as the seed of the wood-apple is invested by its rind.', cite:VP('2.7') },
+  satya:{ text:'…Satya-loka, the sphere of truth, the inhabitants of which never again know death.', cite:VP('2.7') },
+  tapa:{ text:'…the Tapo-loka (the sphere of penance), inhabited by the deities called Vaibhrájas, who are unconsumable by fire.', cite:VP('2.7') },
+  jana:{ text:'At twice that distance is situated Janaloka, where Sanandana and other pure-minded sons of Brahmá, reside.', cite:VP('2.7') },
+  mahar:{ text:'Above Dhruva, at the distance of ten million leagues, lies the sphere of saints, or Mahar-loka, the inhabitants of which dwell in it throughout a Kalpa, or day of Brahmá.', cite:VP('2.7') },
+  svar:{ text:'A station shall be assigned to thee, Dhruva, above the three worlds; one in which thou shalt sustain the stars and the planets…', cite:VP('1.12') },
+  bhuvar:{ text:'The region that extends from the earth to the sun, in which the Siddhas and other celestial beings move, is the atmospheric sphere…', cite:VP('2.7') },
+  bhu:{ text:'Its diameter at the summit is thirty-two thousand Yojanas; and at its base, sixteen thousand: so that this mountain is like the seed-cup of the lotus of the earth.', cite:VP('2.2') },
+  bharata:{ text:'The country that lies north of the ocean, and south of the snowy mountains, is called Bhárata, for there dwelt the descendants of Bharata.', cite:VP('2.3') },
+  atala:{ text:'They are embellished with magnificent palaces, in which dwell numerous Dánavas, Daityas, Yakshas, and great snake-gods.', cite:VP('2.5') },
+  patala:{ text:'The Muni Nárada, after his return from those regions to the skies, declared amongst the celestials that Pátála was much more delightful than Indra’s heaven.', cite:VP('2.5') },
+  shesha:{ text:'Śesha bears the entire world, like a diadem, upon his head, and he is the foundation on which the seven Pátálas rest.', cite:VP('2.5') },
+  end:{ text:'At the end of this day a dissolution of the universe occurs, when all the three worlds, earth, and the regions of space, are consumed with fire.', cite:VP('1.3') },
+};
+
+// Read mode's "At a glance": who lives in each world, and the measurements the texts give (1 yojana ≈ 8–15 km; estimates vary).
+// VP = Vishnu Purana, BP = Bhagavata Purana.
+export const FACTS = {
+  intro:[['Around the egg','Seven envelopes: water, then fire, air, mind, the origin of the elements and intellect, each ten times as broad as the one inside it, and around them boundless nature (VP 2.7)'],
+         ['How many eggs','“Thousands and tens of thousands, and millions and thousands of millions” (VP 2.7)']],
+  satya:[['Who lives here','Brahma, the creator, and those who will never be born again'],['Height','Twelve crores, 120 million yojanas, above Tapoloka (VP 2.7)']],
+  tapa:[['Who lives here','The Vaibhrajas, gods the world-ending fire can’t burn (VP 2.7)'],['Height','Eight crores, 80 million yojanas, above Janaloka (VP 2.7)']],
+  jana:[['Who lives here','Sanandana and the other mind-born sons of Brahma (VP 2.7)'],['Height','Two crores, 20 million yojanas, above Maharloka (VP 2.7)']],
+  mahar:[['Who lives here','Sages who live through a whole day of Brahma (VP 2.7)'],['Height','One crore, 10 million yojanas, above Dhruva (VP 2.7)'],['Lasting','In between: the three worlds below it are called passing, the three above it lasting (VP 2.7)']],
+  svar:[['Who lives here','Indra and the devas; Dhruva at the top'],['Height','From the sun up to Dhruva: about 1.4 million yojanas (VP 2.7)'],['On the way up','The moon, the lunar mansions, Mercury, Venus, Mars, Jupiter, Saturn and the seven sages, each 100,000 to 250,000 yojanas above the last (VP 2.7)']],
+  bhuvar:[['Who lives here','Siddhas and other celestial travelers (VP 2.7)'],['Height','From the earth to the sun: 100,000 yojanas (VP 2.7)']],
+  bhu:[['Mount Meru','84,000 yojanas high and 16,000 deep; 32,000 across at the summit, 16,000 at the base (VP 2.2)'],
+       ['The rings','Seven continents, each twice the size of the one inside it, each ringed by an ocean (VP 2.4)'],
+       ['The edge','Past the last ocean, a land of gold where no one lives, then Lokaloka: 10,000 yojanas high and as many broad. Beyond it, darkness, then the shell of the egg (VP 2.4)']],
+  bharata:[['Who lives here','The descendants of King Bharata (VP 2.3)'],['Size','9,000 yojanas (VP 2.3)'],['Mountains','Seven main chains: Mahendra, Malaya, Sahya, Shuktimat, Riksha, Vindhya and Paripatra (VP 2.3)']],
+  atala:[['Who lives here','Bala, son of the asura architect Maya, master of ninety-six kinds of magic (BP 5.24.16)'],
+         ['Depth','Each lower world is 10,000 yojanas deep: 70,000 in all (VP 2.5)'],
+         ['The ground','World by world, the soil is white, black, purple, yellow, sandy, stony and gold (VP 2.5)']],
+  vitala:[['Who lives here','Shiva as Hatakeshvara, lord of gold, with Bhavani and his attendants (BP 5.24.17)']],
+  sutala:[['Who lives here','Bali, son of Virochana and grandson of Prahlada, with Vishnu at his gate (BP 5.24.18)']],
+  talatala:[['Who lives here','Maya, master of the asuras’ magic, under Shiva’s protection (BP 5.24.28)']],
+  mahatala:[['Who lives here','Kadru’s many-hooded sons, chief among them Kuhaka, Takshaka, Kaliya and Sushena (BP 5.24.29)']],
+  rasatala:[['Who lives here','The sons of Diti and Danu: the Panis, the Nivatakavachas, the Kaleyas and the people of Hiranyapura (BP 5.24.30)']],
+  patala:[['Who lives here','The nagas, led by Vasuki, with Shankha, Kulika, Mahashankha, Shveta, Dhananjaya, Dhritarashtra, Shankhachuda, Kambala, Ashvatara and Devadatta (BP 5.24.31)'],
+          ['Their hoods','Five, seven, ten, a hundred or a thousand each, set with gems that light the dark (BP 5.24.31)']],
+  shesha:[['His heads','A thousand, each crested with a jewel that lights all the lower worlds (VP 2.5)'],['When he yawns','The earth, with its woods, mountains, seas and rivers, trembles (VP 2.5)']],
+  end:[['The four ages','Satya 4,000, Treta 3,000, Dvapara 2,000 and Kali 1,000 divine years, plus their twilights: 12,000 divine years, each 360 human years (VP 1.3)'],
+       ['A day of Brahma','1,000 cycles of the four ages: 4.32 billion years, and a night as long (VP 1.3)']],
+};
+
+// Words a newcomer meets on the page. [title, definition, pattern matched in the text]
+export const GLOSSARY = {
+  purana:['Purana','A genre of Sanskrit texts of cosmology, genealogy and story, compiled over the first millennium CE. There are eighteen major ones.','Puranas?'],
+  loka:['Loka','A world, or realm. The Puranas count fourteen inside the egg of Brahma.','lokas?'],
+  yojana:['Yojana','The Puranas’ measure of distance. Estimates of its length vary, from about 8 to 15 kilometres.','yojanas?'],
+  kalpa:['Kalpa','A day of Brahma: a thousand cycles of the four ages, about 4.32 billion years.','kalpas?'],
+  yuga:['Yuga','One of the four ages: Satya (also called Krita), Treta, Dvapara and Kali. Each is shorter and less righteous than the last.','yugas?'],
+  deva:['Deva','A god: one of the celestial beings led by Indra.','devas?'],
+  asura:['Asura','The rivals of the devas. The Daityas and the Danavas are both asuras.','asuras?'],
+  daitya:['Daitya','The sons of Diti: one great family of asuras.','Daityas?'],
+  danava:['Danava','The sons of Danu: another great family of asuras.','Danavas?'],
+  naga:['Naga','A serpent being, often able to take human form. Many nagas live in the lower worlds.','nagas?'],
+  siddha:['Siddha','A perfected being who travels through the sky.','siddhas?'],
+  tapas:['Tapas','Austerity, and the inner heat it builds. In the stories it gives sages, and even demons, great power.','tapas'],
+  dharma:['Dharma','Right order: duty, virtue and the law that holds the world together.','dharma'],
+  meru:['Meru','The golden mountain at the center of the earth disc, wider at its summit than its base.','Meru'],
+  vaikuntha:['Vaikuntha','Vishnu’s own realm.','Vaikuntha'],
+  brahma:['Brahma','The creator. He lives in Satyaloka, and his days and nights measure the life of the worlds.','Brahma'],
+  vishnu:['Vishnu','The preserver, who comes to earth in many forms, among them Narasimha and Vamana.','Vishnu'],
+  shiva:['Shiva','One of the three great gods: the great ascetic of Mount Kailasa.','Shiva'],
+  indra:['Indra','King of the devas and ruler of Svarga.','Indra'],
+  garuda:['Garuda','The great eagle who carries Vishnu, and the sworn enemy of serpents.','Garuda'],
+  narada:['Narada','A wandering sage who travels between the worlds, carrying news and songs.','Narada'],
+};
+
+// Read mode's further reading, after the glossary
+export const READING = [
+  ['H. H. Wilson, <i>The Vishnu Purana: A System of Hindu Mythology and Tradition</i> (1840)','The translation quoted on this site, with Wilson’s notes comparing other Puranas. <a href="https://sacred-texts.com/book/the-vishnu-purana" target="_blank" rel="noopener">Read it free</a>.'],
+  ['Cornelia Dimmitt and J. A. B. van Buitenen, <i>Classical Hindu Mythology: A Reader in the Sanskrit Puranas</i> (Temple University Press, 1978)','Well-chosen passages from many Puranas, including their cosmology.'],
+  ['Wendy Doniger O’Flaherty, <i>Hindu Myths: A Sourcebook Translated from the Sanskrit</i> (Penguin Classics, 1975)','Short, lively translations of the great myths, with notes.'],
+  ['G. V. Tagare, <i>The Bhagavata Purana</i> (Motilal Banarsidass, Ancient Indian Tradition and Mythology, 1976–78)','A complete, scholarly English translation of the Bhagavata.'],
+  ['Richard L. Thompson, <i>Mysteries of the Sacred Universe: The Cosmology of the Bhagavata Purana</i> (Govardhan Hill, 2000)','A close reading of the Bhagavata’s cosmos, its distances and its maps.'],
+  ['Joseph E. Schwartzberg, “Cosmographical Mapping”, in <i>The History of Cartography</i>, vol. 2, book 1 (University of Chicago Press, 1992)','How Hindu, Jain and Buddhist traditions drew the universe, with many illustrations.'],
+  ['Willibald Kirfel, <i>Die Kosmographie der Inder</i> (1920)','In German: the classic study that set the Hindu, Jain and Buddhist accounts side by side.'],
+];
