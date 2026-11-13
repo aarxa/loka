@@ -407,38 +407,68 @@ loka(-5*S,50,{A:'#d6fff6',B:'#2dd4bf',C:'#00302b',arms:5,twist:2.2,speed:-.005,d
 loka(-6*S,50,{A:'#ffc4b4',B:'#e02a2a',C:'#220004',arms:2,twist:4.4,speed:-.004,dust:.95,core:.7,bright:.5,hole:.1,seed:16,gems:50});
 loka(-7*S,50,{A:'#e6f6ff',B:'#4cc9ff',C:'#24104e',arms:3,twist:3.0,speed:-.004,dust:.7,core:.6,bright:.6,hole:.08,seed:17,gems:520});
 
-// Ananta Shesha. The seven hooded heads are cut from "King Cobra" by Anthony Yanez (CC BY 4.0) and retinted to ivory;
+// Ananta Shesha. The seven hooded heads are cut from "King Cobra" by Anthony Yanez (CC BY 4.0) and smoothed (tools/cobra_export.py);
 // the coils are generated: one body that rises at the cosmic axis and tapers, turn by turn, to the tip of the tail.
 let sheshaTick=null;
 { const base=-8.5*S;
   const camA=STOPS.find(s=>s.id==='shesha').ang, F=new THREE.Vector3(Math.sin(camA),0,Math.cos(camA)), side=new THREE.Vector3(F.z,0,-F.x);
-  const NT={ skinA:tex('naga_skin_a',true), skinB:tex('naga_skin_b',true), norA:tex('naga_nor_a',false), norB:tex('naga_nor_b',false) };
   const SCUTES=12;   // belly plates per body-circumference of length
+  // scales drawn in the shader, for the hoods and heads: rows of rounded, overlapping scales laid on the model in its own
+  // space (projected three ways and blended by the surface's direction), each one slightly domed and a shade different
+  // from its neighbours. They fade out as they shrink toward a pixel, so they never shimmer.
+  const SCALES=`varying vec3 vObj, vObjN;
+    float nHash(vec2 p){ return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453); }
+    vec3 scaleCell(vec2 p){                  // x: dome height, y: the groove between scales, z: a random value per scale
+      const vec2 r=vec2(1.0,1.5); vec2 h=r*.5;
+      vec2 a=mod(p,r)-h, b=mod(p-h,r)-h, ia=floor(p/r), ib=floor((p-h)/r)+.5;
+      bool A=dot(a,a)<dot(b,b); vec2 q=(A?a:b)/.56, id=A?ia:ib;
+      float l=length(q), dome=(1.0-l*l)*.7+.3*clamp(.5-q.y*.5,0.,1.);   // a little raised along the lower, overlapping edge
+      return vec3(dome, smoothstep(.7,1.0,l), nHash(id)); }
+    vec3 scalesAt(vec3 p, vec3 n, float sz, out float fade){
+      vec3 w=pow(abs(n),vec3(4.0)); w/=w.x+w.y+w.z+1e-4;
+      vec3 c=w.z*scaleCell(p.xy/sz)+w.x*scaleCell(p.zy/sz+vec2(9.1,0.))+w.y*scaleCell(p.xz/sz+vec2(3.7,17.3));
+      fade=1.0-smoothstep(.1,.32,length(fwidth(p))/sz); return c; }
+    vec3 nagaBump(vec3 sp, vec3 sn, float h, float fd){   // bump from a height, by screen-space derivatives
+      vec3 sx=dFdx(sp), sy=dFdy(sp), r1=cross(sy,sn), r2=cross(sn,sx); float det=dot(sx,r1)*fd;
+      vec3 g=sign(det)*(dFdx(h)*r1+dFdy(h)*r2); return normalize(abs(det)*sn-g); }`;
   // snake skin: ivory scales under a light glossy coat. Each geometry also carries per-vertex contact shadow (ao),
   // how much it faces down (belly), and distance along the body (along), which the shader uses for the belly plates and banding.
-  const skin=(map,nor,color,{side:sd=THREE.FrontSide,bump=1.1,coil=false}={})=>{
+  // scl>0 draws scales of that size instead of the texture; edge>0 darkens surfaces seen edge-on, so overlapping hoods separate.
+  const skin=(map,nor,color,{side:sd=THREE.FrontSide,bump=1.1,coil=false,scl=0,edge=0,rows=0,cut=null}={})=>{
     const o={ color, map, normalMap:nor, normalScale:new THREE.Vector2(bump,bump), roughness:.36, metalness:0, envMap:goldEnv, envMapIntensity:.26, side:sd };
     const m = lowTier ? new THREE.MeshStandardMaterial(o)
       : new THREE.MeshPhysicalMaterial({ ...o, clearcoat:.32, clearcoatRoughness:.24, iridescence:.2, iridescenceIOR:1.3, iridescenceThicknessRange:[220,420],
           sheen:.16, sheenRoughness:.6, sheenColor:new THREE.Color('#f3e6cf') });
     m.onBeforeCompile=sh=>{
       if(coil) sh.uniforms.uTime=DU.time;
-      sh.vertexShader=sh.vertexShader.replace('#include <common>','#include <common>\nattribute float ao, belly, along;\nvarying float vAo, vBelly, vAlong;'+(coil?'\nattribute vec3 lat; attribute float wav; uniform float uTime;':''))
-        .replace('#include <begin_vertex>','#include <begin_vertex>\nvAo=ao; vBelly=belly; vAlong=along;'+(coil?'\ntransformed+=lat*sin(along*1.15-uTime*1.3)*wav;':''));
-      sh.fragmentShader=sh.fragmentShader.replace('#include <common>','#include <common>\nvarying float vAo, vBelly, vAlong;')
+      sh.vertexShader=sh.vertexShader.replace('#include <common>','#include <common>\nattribute float ao, belly, along;\nvarying float vAo, vBelly, vAlong;'+(coil?'\nattribute vec3 lat; attribute float wav; uniform float uTime;':'')+(scl?'\nvarying vec3 vObj, vObjN;':'')+(rows?'\nattribute float aro; varying float vAro;':''))
+        .replace('#include <begin_vertex>','#include <begin_vertex>\nvAo=ao; vBelly=belly; vAlong=along;'+(coil?'\ntransformed+=lat*sin(along*1.15-uTime*1.3)*wav;':'')+(scl?'\nvObj=position; vObjN=normal;':'')+(rows?'\nvAro=aro;':''));
+      sh.fragmentShader=sh.fragmentShader.replace('#include <common>','#include <common>\nvarying float vAo, vBelly, vAlong;'+(scl||rows?'\n'+SCALES:'')+(rows?'\nvarying float vAro;':''))
         .replace('#include <map_fragment>',`#include <map_fragment>
+        ${cut!==null?`if(vObj.y<${cut.toFixed(2)}) discard;`:''}
         ${coil?`{ float f=fract(vAlong*${SCUTES}.0), seam=smoothstep(0.0,0.14,f)*(1.0-smoothstep(0.84,1.0,f));
           vec3 plate=vec3(0.93,0.89,0.80)*(0.74+0.26*seam);                                  // the wide belly plates, with dark seams between them
           float band=smoothstep(0.3,0.7,0.5+0.5*sin(vAlong*0.85+2.0*sin(vAlong*0.21)));    // soft pale-and-taupe bands along the back
           diffuseColor.rgb*=mix(1.0,0.8,band*(1.0-vBelly));
           diffuseColor.rgb=mix(diffuseColor.rgb,plate,vBelly); }`:''}`)
+        .replace('#include <normal_fragment_maps>',`#include <normal_fragment_maps>
+        ${edge?`diffuseColor.rgb*=mix(${(1-edge).toFixed(2)},1.0,smoothstep(.0,.55,abs(dot(normal,normalize(vViewPosition)))));`:''}
+        ${scl?`{ float fd; vec3 c=scalesAt(vObj,normalize(vObjN),${scl.toFixed(3)},fd);
+          normal=nagaBump(-vViewPosition,normal,(c.x*.6-c.y*.4)*fd*${(scl*.22).toFixed(3)},faceDirection);
+          diffuseColor.rgb*=(1.0-c.y*.3*fd)*(1.0+(c.z-.5)*.12*fd); }`:''}
+        ${rows?`{ vec2 tp=vec2(vAro,vAlong)*${rows}.0; float fd=(1.0-smoothstep(.1,.32,length(fwidth(tp))))*(1.0-smoothstep(.3,.65,vBelly));
+          vec3 c=scaleCell(tp);                    // rows of scales running along the body; the belly keeps its wide plates
+          normal=nagaBump(-vViewPosition,normal,(c.x*.6-c.y*.4)*fd*.16,faceDirection);
+          diffuseColor.rgb*=(1.0-c.y*.3*fd)*(1.0+(c.z-.5)*.12*fd); }`:''}`)
         .replace('#include <aomap_fragment>','#include <aomap_fragment>\n  reflectedLight.indirectDiffuse*=vAo*0.7; reflectedLight.indirectSpecular*=mix(1.0,vAo,0.7);');
     };
-    m.customProgramCacheKey=()=>coil?'naga-coil':'naga';   // the coil's shader differs from the heads'
+    m.customProgramCacheKey=()=>'naga'+(coil?'-coil':'')+(scl?'-s'+scl:'')+(edge?'-e'+edge:'')+(rows?'-r'+rows:'')+(cut!==null?'-c'+cut:'');   // each variant compiles its own shader
     return m; };
-  const coilMat=skin(NT.skinA,NT.norA,'#cfc5b2',{coil:true});
-  const frontMat=skin(NT.skinA,NT.norA,'#d8cfbe',{side:THREE.DoubleSide,bump:.45}), backMat=skin(NT.skinB,NT.norB,'#a8987f',{side:THREE.DoubleSide,bump:.8}),
-        headMat=skin(NT.skinB,NT.norB,'#c7bba6',{side:THREE.DoubleSide,bump:.8});
+  const coilMat=skin(null,null,'#d3c9b6',{coil:true,rows:34});
+  // the hoods: smooth pale scales in front, darker and finer behind; the heads carry the larger plates of a cobra's crown
+  const NECK_CUT=2.6;   // below this the cut neck flares (it bent down into the original's coils), so it is hidden and the roots take over
+  const frontMat=skin(null,null,'#dcd3c2',{side:THREE.DoubleSide,scl:.62,edge:.42,cut:NECK_CUT}), backMat=skin(null,null,'#a69780',{side:THREE.DoubleSide,scl:.46,edge:.3,cut:NECK_CUT}),
+        headMat=skin(null,null,'#d2c7b3',{side:THREE.DoubleSide,scl:.7,edge:.3});
 
   // the body: it rises a little at the cosmic axis, where it splits into the seven necks, then spirals outward and down
   const TOP=base+13, HS=1.3, TRUNK=base+5.5, cp=[new THREE.Vector3(0,TRUNK,0),new THREE.Vector3(0,TRUNK-2.4,0),new THREE.Vector3(3,base+2.6,1.8)];
@@ -450,19 +480,19 @@ let sheshaTick=null;
     const u=(s-neck)/(LEN-neck); return u<.86 ? R1-(R1-2.2)*u/.86 : 2.2*Math.pow(Math.max(0,1-(u-.86)/.14),.7)+.06; };
   // a slightly flattened body, flatter still underneath, with its belly turned down on the coils and toward the viewer
   // where the body rears up (as a cobra's does)
-  function tubeGeometry(curve,LEN,radiusAt,segs,radial,kTex,{contact=true,aoAt=null,wavAt=()=>0}={}){
+  function tubeGeometry(curve,LEN,radiusAt,segs,radial,kTex,{contact=true,aoAt=null,wavAt=()=>0,shape=[1.1,.92,.8]}={}){
     const P=new THREE.Vector3(), T=new THREE.Vector3(), D=new THREE.Vector3(), U=new THREE.Vector3(), W=new THREE.Vector3(), N=new THREE.Vector3(), DOWN=new THREE.Vector3(0,-1,0);
-    const n=(segs+1)*(radial+1), pos=new Float32Array(n*3), nor=new Float32Array(n*3), uv=new Float32Array(n*2), alg=new Float32Array(n), bel=new Float32Array(n), lat=new Float32Array(n*3), wav=new Float32Array(n), idx=[];
+    const n=(segs+1)*(radial+1), pos=new Float32Array(n*3), nor=new Float32Array(n*3), uv=new Float32Array(n*2), alg=new Float32Array(n), aro=new Float32Array(n), bel=new Float32Array(n), lat=new Float32Array(n*3), wav=new Float32Array(n), idx=[];
     const spine=[]; let along=0, prev=0;
     for(let i=0;i<=segs;i++){ const t=i/segs, s=t*LEN, r=radiusAt(s); along+=(s-prev)/(2*Math.PI*Math.max(r,1.2)); prev=s;
       curve.getPointAt(t,P); curve.getTangentAt(t,T); spine.push([P.x,P.y,P.z,r,s]);
       D.copy(DOWN).lerp(F,THREE.MathUtils.smoothstep(Math.abs(T.y),.55,.9)).normalize();
       U.copy(D).addScaledVector(T,-D.dot(T)).normalize().negate(); W.crossVectors(T,U).normalize(); const wv=wavAt(t,s);
       for(let j=0;j<=radial;j++){ const v=j/radial*Math.PI*2, cx=Math.cos(v), sy=Math.sin(v), o=i*(radial+1)+j;
-        const w=r*1.1, h=r*(sy<0?.8:.92);
+        const w=r*shape[0], h=r*(sy<0?shape[2]:shape[1]);
         pos[o*3]=P.x+W.x*cx*w+U.x*sy*h; pos[o*3+1]=P.y+W.y*cx*w+U.y*sy*h; pos[o*3+2]=P.z+W.z*cx*w+U.z*sy*h;
         N.copy(W).multiplyScalar(cx/w).addScaledVector(U,sy/h).normalize(); nor[o*3]=N.x; nor[o*3+1]=N.y; nor[o*3+2]=N.z;
-        uv[o*2]=j/radial*2; uv[o*2+1]=along*kTex; alg[o]=along; bel[o]=THREE.MathUtils.smoothstep(-sy,.5,.88);
+        uv[o*2]=j/radial*2; uv[o*2+1]=along*kTex; alg[o]=along; aro[o]=j/radial; bel[o]=THREE.MathUtils.smoothstep(-sy,.5,.88)*(1-THREE.MathUtils.smoothstep(Math.abs(T.y),.5,.85));
         lat[o*3]=W.x; lat[o*3+1]=W.y; lat[o*3+2]=W.z; wav[o]=wv; } }
     for(let i=0;i<segs;i++) for(let j=0;j<radial;j++){ const a=i*(radial+1)+j, b=a+radial+1; idx.push(a,b,a+1, b,b+1,a+1); }
     // contact shadow: darken skin that sits close to another stretch of the body (one turn resting on the next)
@@ -472,7 +502,7 @@ let sheshaTick=null;
       for(const c of M){ if(Math.abs(c[4]-si)<ri*3+5) continue; const dx=x-c[0], dy=y-c[1], dz=z-c[2], g=Math.sqrt(dx*dx+dy*dy+dz*dz)-c[3]*1.05; if(g<gap) gap=g; }
       ao[o]=.32+.68*THREE.MathUtils.smoothstep(gap,0,4.5)*(1-.25*bel[o]); }
     const g=new THREE.BufferGeometry(); g.setAttribute('position',new THREE.BufferAttribute(pos,3)); g.setAttribute('normal',new THREE.BufferAttribute(nor,3));
-    g.setAttribute('uv',new THREE.BufferAttribute(uv,2)); g.setAttribute('along',new THREE.BufferAttribute(alg,1)); g.setAttribute('belly',new THREE.BufferAttribute(bel,1));
+    g.setAttribute('uv',new THREE.BufferAttribute(uv,2)); g.setAttribute('along',new THREE.BufferAttribute(alg,1)); g.setAttribute('aro',new THREE.BufferAttribute(aro,1)); g.setAttribute('belly',new THREE.BufferAttribute(bel,1));
     g.setAttribute('ao',new THREE.BufferAttribute(ao,1)); g.setAttribute('lat',new THREE.BufferAttribute(lat,3)); g.setAttribute('wav',new THREE.BufferAttribute(wav,1));
     g.setIndex(idx); return g; }
   // the wave stays out of the rising trunk, where the necks join, and grows toward the tail so its tip curls
@@ -494,39 +524,78 @@ let sheshaTick=null;
 
   // seven hooded heads fan out of the neck, facing the viewer at this stop, each with a jewel on its hood
   const gemGeo=new THREE.OctahedronGeometry(.5,0), gemMat=new THREE.MeshStandardMaterial({color:'#6e0616',emissive:'#c20c26',emissiveIntensity:.75,metalness:.1,roughness:.1,envMap:goldEnv,envMapIntensity:1.2});
-  const eyeMat=new THREE.MeshBasicMaterial({color:new THREE.Color(2.1,1.45,.38)}), mouthMat=new THREE.MeshStandardMaterial({color:'#4a3a2e',roughness:.6});
+  // eyes: glossy and dark, with a glowing gold iris and a dark vertical slit for a pupil
+  const eyeMat=new THREE.MeshStandardMaterial({color:'#0d0904',roughness:.14,metalness:0,envMap:goldEnv,envMapIntensity:.7,emissive:new THREE.Color(1.45,.62,.05)});
+  eyeMat.onBeforeCompile=sh=>{
+    sh.vertexShader=sh.vertexShader.replace('#include <common>','#include <common>\nattribute vec3 eye; varying vec3 vEye;').replace('#include <begin_vertex>','#include <begin_vertex>\nvEye=eye;');
+    sh.fragmentShader=sh.fragmentShader.replace('#include <common>','#include <common>\nvarying vec3 vEye;')
+      .replace('#include <emissivemap_fragment>',`#include <emissivemap_fragment>
+      { vec3 e=normalize(vEye); float slit=(1.0-smoothstep(.1,.17,abs(e.x)))*(1.0-smoothstep(.55,.7,abs(e.y)))*smoothstep(.3,.55,e.z);
+        totalEmissiveRadiance*=(1.0-slit)*(.35+.65*smoothstep(.1,.75,e.z)); }`); };
+  eyeMat.customProgramCacheKey=()=>'naga-eye';
+  const mouthMat=new THREE.MeshStandardMaterial({color:'#77624f',roughness:.6});
+  // a forked tongue, which each head flicks out now and then
+  const tongueGeo=(()=>{ const parts=[[0,0,0,0,-.03,1.4,.09,.06],[0,-.03,1.4,-.22,-.04,2.0,.06,.014],[0,-.03,1.4,.22,-.04,2.0,.06,.014]].map(([x0,y0,z0,x1,y1,z1,r0,r1])=>{
+      const a=new THREE.Vector3(x0,y0,z0), b=new THREE.Vector3(x1,y1,z1), g=new THREE.CylinderGeometry(r1,r0,a.distanceTo(b),5,1,true);
+      g.translate(0,a.distanceTo(b)/2,0); g.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,1,0),b.clone().sub(a).normalize())); g.translate(a.x,a.y,a.z); return g; });
+    const pos=[],idx=[]; let off=0; parts.forEach(g=>{ pos.push(...g.attributes.position.array); idx.push(...g.index.array.map(i=>i+off)); off+=g.attributes.position.count; });
+    const g=new THREE.BufferGeometry(); g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3)); g.setIndex(idx); g.computeVertexNormals(); return g; })();
+  const tongueMat=new THREE.MeshStandardMaterial({color:'#4a0d14',roughness:.35,emissive:'#2a0408'});
   const dec=(b,T)=>{ const s=atob(b), u=new Uint8Array(s.length); for(let i=0;i<s.length;i++) u[i]=s.charCodeAt(i); return new T(u.buffer); };
+  const HP=new THREE.Vector3(-2.3,19.4,8.2);   // the back of the skull, where it meets the hood: each head nods about this point
+  const NOD=.2, YAW=.15;                       // heads tipped forward to show the crown and eyes; the fan opens outward
   fetch('assets/models/shesha_hood.json').then(r=>{ if(!r.ok) throw new Error(r.status); return r.json(); }).then(M=>{
     const MATS={front:frontMat,back:backMat,head:headMat,eyes:eyeMat,mouth:mouthMat};
-    const parts=M.meshes.map(m=>{ const g=new THREE.BufferGeometry(), p=dec(m.pos,Float32Array), cnt=p.length/3;
-      g.setAttribute('position',new THREE.BufferAttribute(p,3)); g.setAttribute('normal',new THREE.BufferAttribute(dec(m.nor,Float32Array),3));
-      g.setAttribute('uv',new THREE.BufferAttribute(dec(m.uv,Float32Array),2)); g.setIndex(new THREE.BufferAttribute(dec(m.idx,Uint16Array),1));
-      // necks darken where they rise out of the body; no belly plates or bands on the hoods
-      const ao=new Float32Array(cnt); for(let i=0;i<cnt;i++) ao[i]=.42+.58*THREE.MathUtils.smoothstep(p[i*3+1],.5,6);
+    const parts=M.meshes.map(m=>{ const g=new THREE.BufferGeometry(), p=dec(m.pos,Float32Array), nr=dec(m.nor,Float32Array), cnt=p.length/3;
+      if(m.name==='eyes'){
+        // the eyes, half as large again about their own centres, each with a frame for drawing the pupil
+        const E=[0,1].map(()=>({c:new THREE.Vector3(),n:new THREE.Vector3(),k:0})), which=i=>p[i*3]<-2.3?0:1;
+        for(let i=0;i<cnt;i++){ const e=E[which(i)]; e.c.x+=p[i*3]; e.c.y+=p[i*3+1]; e.c.z+=p[i*3+2]; e.n.x+=nr[i*3]; e.n.y+=nr[i*3+1]; e.n.z+=nr[i*3+2]; e.k++; }
+        E.forEach(e=>{ e.c.divideScalar(e.k); e.n.set(Math.sign(e.c.x+2.3),.15,.25).normalize(); e.t=new THREE.Vector3(0,0,1).addScaledVector(e.n,-e.n.z).normalize(); e.b=new THREE.Vector3().crossVectors(e.n,e.t); });
+        const eye=new Float32Array(cnt*3), V=new THREE.Vector3();
+        for(let i=0;i<cnt;i++){ const e=E[which(i)]; V.set(p[i*3],p[i*3+1],p[i*3+2]).sub(e.c);
+          const o=V.clone().normalize(); eye[i*3]=o.dot(e.t); eye[i*3+1]=o.dot(e.b); eye[i*3+2]=o.dot(e.n);
+          V.multiplyScalar(1.5).add(e.c).addScaledVector(e.n,-.08); p[i*3]=V.x; p[i*3+1]=V.y; p[i*3+2]=V.z; }
+        g.setAttribute('eye',new THREE.BufferAttribute(eye,3)); }
+      g.setAttribute('position',new THREE.BufferAttribute(p,3)); g.setAttribute('normal',new THREE.BufferAttribute(nr,3));
+      g.setIndex(new THREE.BufferAttribute(dec(m.idx,Uint16Array),1));
+      // necks darken where they rise out of the body, heads under the jaw; no belly plates or bands here
+      const ao=new Float32Array(cnt), y=i=>p[i*3+1];
+      for(let i=0;i<cnt;i++) ao[i]=m.name==='head' ? .45+.55*THREE.MathUtils.smoothstep(y(i),18.4,20.6) : .42+.58*THREE.MathUtils.smoothstep(y(i),.5,6);
       g.setAttribute('ao',new THREE.BufferAttribute(ao,1)); g.setAttribute('belly',new THREE.BufferAttribute(new Float32Array(cnt),1)); g.setAttribute('along',new THREE.BufferAttribute(new Float32Array(cnt),1));
       return [g,MATS[m.name],m.name]; });
-    const jf=M.hoodFront, heads=[];
-    for(let k=-3;k<=3;k++){ const ak=Math.abs(k), outer=new THREE.Group(), inner=new THREE.Group();
-      parts.forEach(([g,m,name])=>{ const mesh=new THREE.Mesh(g,m); mesh.castShadow=name!=='eyes'; mesh.receiveShadow=true; inner.add(mesh); });
+    const jf=M.hoodFront, sn=M.snout, heads=[];
+    for(let k=-3;k<=3;k++){ const ak=Math.abs(k), outer=new THREE.Group(), inner=new THREE.Group(), head=new THREE.Group();
+      head.position.copy(HP); inner.add(head);
+      parts.forEach(([g,m,name])=>{ const mesh=new THREE.Mesh(g,m); mesh.castShadow=name!=='eyes'; mesh.receiveShadow=true;
+        if(name==='front'||name==='back') inner.add(mesh); else { mesh.position.copy(HP).negate(); head.add(mesh); } });
       inner.rotation.set(-.12,0,-.174);                       // stand the cut neck upright: the original leans forward and a little to one side
+      const tongue=new THREE.Mesh(tongueGeo,tongueMat); tongue.position.set(sn[0],sn[1]-.5,sn[2]-.45).sub(HP); tongue.rotation.x=-.12; tongue.scale.setScalar(.001); head.add(tongue);
       const gem=new THREE.Mesh(gemGeo,gemMat); gem.position.set(jf[0],jf[1],jf[2]+.25); gem.scale.set(.9,1.2,.55); inner.add(gem);
       inner.add(makePoints([jf[0],jf[1],jf[2]+.6],[1.8,.14,.1],2.2,.35));
       outer.add(inner);
       outer.position.set(0,TOP-(3.0+ak*.85)*HS,0).addScaledVector(side,k*1.2*HS).addScaledVector(F,(.6-ak*1.1)*HS);
-      const rx=ak*.05, rz=-k*.27; outer.rotation.set(rx,camA+k*.09,rz,'YXZ'); outer.scale.setScalar(HS*(1-ak*.06));
-      scene.add(outer); heads.push({o:outer,rx,rz,ph:k*1.7});
+      const rx=ak*.05, rz=-k*.27; outer.rotation.set(rx,camA+k*YAW,rz,'YXZ'); outer.scale.setScalar(HS*(1-ak*.06));
+      scene.add(outer); heads.push({o:outer,h:head,tongue,rx,rz,ph:k*1.7,look:k*.06,next:2+Math.random()*8,t0:-9});
     }
     // the body splits into the seven necks: a smooth root runs from inside the trunk up into each cobra neck,
     // in the same skin as the coils, darker low down where the necks press together
     heads.forEach((h,i)=>{ const k=i-3, ak=Math.abs(k); h.o.updateMatrixWorld(true); const inner=h.o.children[0];
-      const E=inner.localToWorld(new THREE.Vector3(0,3.2,0)), dir=inner.localToWorld(new THREE.Vector3(0,5.2,0)).sub(E).normalize();
+      // the cut neck leans, so its centre at this height is off to one side (measured from the model's cross-sections)
+      const E=inner.localToWorld(new THREE.Vector3(...M.neck.join)), dir=inner.localToWorld(new THREE.Vector3(...M.neck.up)).sub(E).normalize();
       const S0=new THREE.Vector3(0,base+.8,0).addScaledVector(side,k*.5).addScaledVector(F,.7-ak*.45);
       const rc=new THREE.CatmullRomCurve3([S0,S0.clone().add(new THREE.Vector3(0,2.2,0)),E.clone().addScaledVector(dir,-2.6),E],false,'centripetal'), L=rc.getLength();
-      const rN=2.35*h.o.scale.x;   // just wide enough to cover the cut edge of the cobra's neck
-      const root=new THREE.Mesh(tubeGeometry(rc,L,s=>rN*(1+.1*(1-s/L)),40,lowTier?14:22,2.2,{contact:false,aoAt:u=>.32+.5*THREE.MathUtils.smoothstep(u,.0,.7)}),coilMat);
+      const rN=Math.min(M.neck.half[0]/1.12,M.neck.half[1]/.95)*.99*h.o.scale.x;   // just inside the neck's skin there
+      const root=new THREE.Mesh(tubeGeometry(rc,L,s=>rN*(1+.1*(1-s/L)),40,lowTier?14:22,2.2,{contact:false,shape:[1.12,.95,.95],aoAt:u=>.32+.5*THREE.MathUtils.smoothstep(u,.0,.7)}),coilMat);
       root.castShadow=root.receiveShadow=true; scene.add(root); });
-    // and the heads sway, each in its own slow rhythm
-    sheshaTick=t=>heads.forEach(h=>{ h.o.rotation.z=h.rz+Math.sin(t*.42+h.ph)*.032; h.o.rotation.x=h.rx+Math.sin(t*.31+h.ph*1.3)*.026; });
+    // the hoods sway, each in its own slow rhythm, and the heads nod and glance a little on their own
+    sheshaTick=t=>heads.forEach(h=>{ h.o.rotation.z=h.rz+Math.sin(t*.42+h.ph)*.032; h.o.rotation.x=h.rx+Math.sin(t*.31+h.ph*1.3)*.026;
+      h.h.rotation.x=NOD+Math.sin(t*.53+h.ph*.8)*.035; h.h.rotation.y=h.look+Math.sin(t*.23+h.ph*2.1)*.07;
+      // a flick: out, three quick waggles, back in, about every five to twelve seconds per head
+      if(t>h.next){ h.t0=t; h.next=t+5+Math.random()*7; }
+      const u=(t-h.t0)/.9, out=u<0||u>1?0:Math.sin(Math.PI*u)**.5;
+      h.tongue.scale.set(1,1,Math.max(.001,out)); h.tongue.rotation.x=-.12+Math.sin((t-h.t0)*26)*.16*out; h.tongue.visible=out>.01; });
+    heads.forEach(h=>{ h.h.rotation.x=NOD; h.h.rotation.y=h.look; });
   }).catch(e=>console.error('shesha model',e));
 }
 
