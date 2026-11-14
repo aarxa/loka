@@ -110,19 +110,36 @@ function renderStories(){
 }
 renderStories();
 
-// scrolling: each stop has an anchor point; between anchors the camera eases from one stop to the next
+// scrolling: each stop has an anchor point at the middle of its section. Around each anchor the camera holds the
+// stop's shot, which moves slowly as you scroll through the section (a push in, a few degrees of arc). Between anchors
+// it flies to the next stop, along a smooth curve through the stop's waypoints when it has any, so it can dive
+// through the world it is leaving; otherwise it eases round the axis and down, as before.
 let anchors=[];
 function measure(){ anchors=sections.map(s=>Math.max(0,s.offsetTop+s.offsetHeight/2-innerHeight/2)); anchors[0]=0; }
 measure(); addEventListener('load',measure); document.fonts&&document.fonts.ready.then(measure);
-const lerp=(a,b,t)=>a+(b-a)*t, glerp=(a,b,t)=>a*Math.pow(b/a,t);
-function dwell(f){ const t=Math.min(1,Math.max(0,(f-.18)/.64)); return t*t*(3-2*t); }
+const lerp=(a,b,t)=>a+(b-a)*t, glerp=(a,b,t)=>a*Math.pow(b/a,t), ease=t=>t*t*(3-2*t);
+const HOLD=.18;                                            // the share of each gap the camera spends holding a shot, at each end
+// a stop's shot at s: 0 as you arrive, .5 at its anchor, 1 as you leave. A shot gives [arrive, leave] pairs for its
+// angle a, distance d and height h above the world, and where it looks; a stop without one holds its single view.
+function shotAt(S,s){ const q=S.shot||{}, L=(v,d)=>Array.isArray(v)?lerp(v[0],v[1],ease(s)):(v??d);
+  return { ang:L(q.a,S.ang), dist:L(q.d,S.dist), cy:S.y+L(q.h,S.h), look:q.look||S.look||[0,S.y,0] }; }
+// Catmull-Rom through the points, by component (angle, distance, height), so the path stays a smooth curve
+function through(P,e){ const n=P.length-1, x=Math.min(n-1e-6,Math.max(0,e*n)), i=Math.floor(x), t=x-i;
+  const p=k=>k<0?P[0].map((v,j)=>2*v-P[1][j]):k>n?P[n].map((v,j)=>2*v-P[n-1][j]):P[k];
+  const a=p(i-1), b=p(i), c=p(i+1), d=p(i+2), t2=t*t, t3=t2*t;
+  return b.map((_,j)=>.5*(2*b[j]+(-a[j]+c[j])*t+(2*a[j]-5*b[j]+4*c[j]-d[j])*t2+(-a[j]+3*b[j]-3*c[j]+d[j])*t3)); }
 function camAt(sc){
   const n=anchors.length; let i=0,f=0;
   if(sc<=anchors[0]){i=0;f=0;} else if(sc>=anchors[n-1]){i=n-2;f=1;}
   else { while(i<n-2 && sc>=anchors[i+1]) i++; f=(sc-anchors[i])/Math.max(1,anchors[i+1]-anchors[i]); }
-  const e=dwell(f), A=STOPS[i], B=STOPS[i+1], la=A.look||[0,A.y,0], lb=B.look||[0,B.y,0];
-  return { y:lerp(A.y,B.y,e), dist:glerp(A.dist,B.dist,e), h:lerp(A.h,B.h,e), ang:lerp(A.ang,B.ang,e), fog:glerp(A.fog,B.fog,e),
-           lx:lerp(la[0],lb[0],e), ly:lerp(la[1],lb[1],e), lz:lerp(la[2],lb[2],e) };
+  const A=STOPS[i], B=STOPS[i+1];
+  const out=(v,look,fog)=>({ ang:v.ang, dist:v.dist, cy:v.cy, lx:look[0], ly:look[1], lz:look[2], fog });
+  if(f<=HOLD){ const v=shotAt(A,.5+.5*f/HOLD); return out(v,v.look,A.fog); }                  // holding A's shot, leaving it
+  if(f>=1-HOLD){ const v=shotAt(B,.5*(f-(1-HOLD))/HOLD); return out(v,v.look,B.fog); }        // holding B's shot, arriving
+  const e=ease((f-HOLD)/(1-2*HOLD)), a=shotAt(A,1), b=shotAt(B,0), fog=glerp(A.fog,B.fog,e);
+  const look=a.look.map((v,j)=>lerp(v,b.look[j],e));
+  if(A.via){ const [ang,dist,cy]=through([[a.ang,a.dist,a.cy],...A.via,[b.ang,b.dist,b.cy]],e); return out({ang,dist,cy},look,fog); }
+  return out({ ang:lerp(a.ang,b.ang,e), dist:glerp(a.dist,b.dist,e), cy:lerp(a.cy,b.cy,e) },look,fog);
 }
 function activeIndex(sc){ let best=0,bd=1e9; anchors.forEach((a,i)=>{ const d=Math.abs(a-sc); if(d<bd){bd=d;best=i;} }); return best; }
 let lastActive=-1;
