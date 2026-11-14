@@ -743,6 +743,12 @@ function updateLabels(){
 const yC={color:new THREE.Color(YUGAS[0].tint),bg:new THREE.Color(YUGAS[0].bg),dharma:1,nebA:new THREE.Color('#ffd59a'),nebB:new THREE.Color('#7fa2ff')};
 const cur=camAt(scrollY);
 const ptr={x:0,y:0,sx:0,sy:0}; let lastY=scrollY;
+// the scroll the camera follows glides after the real one. With a mouse or trackpad the text glides with it, so the
+// words on screen always belong to the world on screen, however fast you scroll. Under a finger the text stays with
+// the finger, and the camera catches up quicker instead
+let smoothY=scrollY, wasRead=false;
+const story=document.getElementById('story'), foot=document.querySelector('.site-foot'), glide=matchMedia('(pointer: fine)');
+const shift=y=>{ const v=y?`translate3d(0,${y.toFixed(1)}px,0)`:''; if(story.style.transform!==v){ story.style.transform=v; if(foot) foot.style.transform=v; } };
 if(!reduce) addEventListener('pointermove',e=>{ if(e.pointerType!=='mouse') return; ptr.x=e.clientX/innerWidth*2-1; ptr.y=e.clientY/innerHeight*2-1; },{passive:true});
 
 // ---- filmic finish: bloom, ACES colour, vignette, grain, a touch of lens fringing ----
@@ -781,10 +787,13 @@ addEventListener('resize',resize); resize();
 let last=performance.now();
 function frame(now){
   requestAnimationFrame(frame);
-  if(document.body.classList.contains('read')) return;
+  if(document.body.classList.contains('read')){ if(!wasRead){ shift(0); wasRead=true; } return; }
+  if(wasRead){ smoothY=scrollY; wasRead=false; }   // back from read mode: start where the page is
   const dt=Math.min(.05,(now-last)/1000); last=now; const t=now/1000;
-  const tg=camAt(scrollY); const k=reduce?1:1-Math.exp(-dt*3.2);
-  for(const key in tg) cur[key]+=(tg[key]-cur[key])*k;
+  { const fine=glide.matches, k=reduce?1:1-Math.exp(-dt*(fine?4.5:7));
+    smoothY+=(scrollY-smoothY)*k; if(Math.abs(scrollY-smoothY)<.25) smoothY=scrollY;
+    shift(fine?scrollY-smoothY:0); }
+  Object.assign(cur,camAt(smoothY));
   const drift=reduce?0:Math.sin(t*.07)*.12;
   // the camera answers the mouse a little, as if the screen were a window
   ptr.sx+=(ptr.x-ptr.sx)*Math.min(1,dt*2.5); ptr.sy+=(ptr.y-ptr.sy)*Math.min(1,dt*2.5);
@@ -792,7 +801,7 @@ function frame(now){
   camera.position.set(Math.sin(a)*d,cur.cy-ptr.sy*1.4,Math.cos(a)*d);
   camera.lookAt(cur.lx,cur.ly,cur.lz);
   // scroll fast and the view widens a touch; stop, and it settles back
-  { const v=Math.abs(scrollY-lastY)/Math.max(dt,1e-3); lastY=scrollY; const target=50+(reduce?0:Math.min(7,v*.0035));
+  { const v=Math.abs(smoothY-lastY)/Math.max(dt,1e-3); lastY=smoothY; const target=50+(reduce?0:Math.min(7,v*.0035));
     const fov=camera.fov+(target-camera.fov)*Math.min(1,dt*(target>camera.fov?6:2));
     if(Math.abs(fov-camera.fov)>.01){ camera.fov=fov; camera.updateProjectionMatrix(); GU.px.value=pxFor(); } }
   scene.fog.density=cur.fog*(camera.aspect<.8?.8:1);
