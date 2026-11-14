@@ -4,6 +4,8 @@ An explorable universe of Hindu mythology. You travel through a 3D cosmos of the
 
 Created by Aarya Rajgor.
 
+**Live:** https://aarxa.github.io/loka/
+
 *Loka is a working title. This is an early prototype.*
 
 ## Run it
