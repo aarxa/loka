@@ -1,5 +1,5 @@
 <p align="center">
-  <a href="https://aarxa.github.io/loka/"><img src="media/readme/title.jpg" alt="Loka: the cosmic egg of the Puranas, its fourteen worlds stacked inside" width="100%"></a>
+  <a href="https://aarxa.github.io/loka/"><img src="media/readme/hero.jpg" alt="The Loka site: “Fourteen worlds. One universe.” beside the cosmic egg, its fourteen worlds stacked inside, with the rail of worlds on the right" width="100%"></a>
 </p>
 
 <p align="center"><b>An explorable universe of Hindu mythology.</b><br>
@@ -113,4 +113,6 @@ The original downloads are left out to keep the repo small. Fetch them again fro
 
 ## License
 
-No license has been chosen yet, so all rights are reserved by Aarya Rajgor. The third-party assets above keep their own licenses.
+**All rights reserved.** © 2026 Aarya Rajgor. You're welcome to visit the site and look through this repository. You may not copy, modify, redistribute or reuse any part of it, code or media, without written permission. That includes using it to train AI models. See [LICENSE](LICENSE).
+
+The third-party material listed under Credits keeps its own licenses.
