@@ -47,7 +47,7 @@ On a phone, each world’s text sits in a card under the scene.
 
 - **Plain web code:** three.js and plain ES modules, with no build step.
 - **Living galaxies:** each gas world is a density-wave galaxy. Its stars, gas and dust follow their own orbits, and the spiral arms hold their shape while everything flows through them.
-- **Tapoloka’s fire:** painted once at load into high-resolution textures from layered noise, then stacked as turning sheets round a burning star.
+- **Tapoloka’s fire:** painted once at load into high-resolution textures from layered noise. The same fire fills the world as a volume of gas the camera flies through, with wisps that stream past and sharp sheets for the view from above, round a burning star.
 - **The earth:** day and night follow the sun as it circles Meru. There are mountain ranges, clouds that cast shadows, and seas with swell and surf.
 - **The camera:** scrolling flies it along a path through the worlds. The top worlds each have their own moving shot.
 - **The film:** rendered one frame at a time from the site at 4K, then encoded with the Mac’s hardware video encoder. The tools are on the `film-kit` branch.
@@ -73,7 +73,7 @@ Then go to <http://localhost:5173>. The page needs a server: browsers won't run 
 | `js/page.js` | The page: builds each world's text, the rail and read mode, and turns scrolling into a camera path |
 | `js/cosmos.js` | The 3D scene: the night sky, the egg, the fourteen worlds, Mount Meru and Ananta Shesha |
 | `js/galaxy.js` | A world as a living galaxy: stars on their own orbits, with gas, star-forming knots and dust along spiral arms that hold their shape while everything flows through them |
-| `js/nebula.js` | A world of living fire: sharp flame and smoke painted once at load in high detail, then layered through the world's thickness round a burning star (Tapoloka) |
+| `js/nebula.js` | A world of living fire (Tapoloka): sharp flame and smoke painted once at load in high detail, filling the world as a ray-marched volume of gas, wisps and sheets round a burning star |
 | `vendor/three/` | three.js 0.160.0 and the add-ons the scene uses |
 | `assets/sky/` | The real night sky (NASA star map) and the 7,000 brightest stars taken from it (`stars.bin`, packed from `stars.json`) |
 | `assets/tex/` | Textures for the oceans, continents, Meru and Shesha |

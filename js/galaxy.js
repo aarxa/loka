@@ -32,16 +32,20 @@ const ORBITS = `
     return vec3(cos(M)*r*R, y, sin(M)*r*R); }
   // keep points at least 1.5 pixels across and dim the smaller ones instead, so nothing shimmers,
   // and no bigger than 70, fading the ones that would be, so puffs close to the camera don't turn into blobs
-  float pointSize(float s, vec4 mv, out float dim){ float p=s*px/max(-mv.z,0.1); dim=min(1.0,(p*p)/2.25)*min(1.0,pow(42.0/p,2.0)); return clamp(p,1.5,70.0); }
+  float pointSize(float s, vec4 mv, out float dim){ float p=s*px/max(-mv.z,0.1); dim=min(1.0,(p*p)/2.25)*min(1.0,pow(42.0/p,2.0));
+  #ifdef VEIL
+    dim*=veil((mv.xyz-viewMatrix[3].xyz)*mat3(viewMatrix),modelMatrix[3].xyz);   // a world inside a cloud: the gas between dims each point
+  #endif
+    return clamp(p,1.5,70.0); }
 `;
 
 // one layer of points
-function layer({ count, attrs, vertex, fragment, uniforms, blending = THREE.AdditiveBlending, order }) {
+function layer({ count, attrs, vertex, fragment, uniforms, blending = THREE.AdditiveBlending, order, head = '' }) {
   const g = new THREE.BufferGeometry();
   g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(count * 3), 3));   // unused: the shader places every point
   for (const [name, size, data] of attrs) g.setAttribute(name, new THREE.BufferAttribute(data, size));
   g.boundingSphere = new THREE.Sphere(new THREE.Vector3(), uniforms.R.value * 1.6);
-  const m = new THREE.ShaderMaterial({ uniforms, vertexShader: ORBITS + vertex, fragmentShader: fragment,
+  const m = new THREE.ShaderMaterial({ uniforms, vertexShader: head + ORBITS + vertex, fragmentShader: fragment,
     transparent: true, depthWrite: false, blending });
   const p = new THREE.Points(g, m); p.frustumCulled = false; p.renderOrder = order; p.userData.count = count; return p;
 }
@@ -54,8 +58,9 @@ function layer({ count, attrs, vertex, fragment, uniforms, blending = THREE.Addi
     o.hole     an empty centre, 0..1 of R       o.gems     jewel lights orbiting in the disc (the lower worlds)
     o.glow     overall brightness               o.scale    how far the light spreads (0.3)
     o.white    how far the stars lean to white (0.3)   o.warmCore false for a world no sun reaches: no warm old centre
-    o.young    colour of the young stars in the arms (blue-white)
+    o.young    colour of the young stars in the arms (blue-white)          o.dust     false: no dark dust in the arms
     o.time, o.px: shared uniforms                o.low: fewer points, for phones
+    o.veil     GLSL with veil(world, centre), 0..1: how much of each point's light gets through (a world inside a cloud)
     lod(f) draws only that share (0.1..1) of the stars and puffs, a little brighter each, for a world seen from afar  */
 export function makeGalaxy(o) {
   const r = rng(o.seed || 1), low = !!o.low, R = o.R, thick = o.thick || 1, hole = o.hole || 0, sc = o.scale ?? .3, wh = o.white ?? .3;
@@ -70,7 +75,7 @@ export function makeGalaxy(o) {
   // how long a puff of gas lives: long enough to drift a set angle out of its arm, whatever its speed relative to the arms
   const lifeFor = (a, drift) => Math.min(140, Math.max(10, drift / Math.max(Math.abs(omegaA(a) - patt), 1e-3)));
   const discA = () => { let a; do { a = -Math.log(1 - r() * .985) * sc; } while (a > 1 || a < hole); return a; };   // exponential disc
-  const group = new THREE.Group(), mats = [], thinned = [];
+  const group = new THREE.Group(), mats = [], thinned = [], head = o.veil ? '#define VEIL\n' + o.veil : '';
   const colour = v => [v.r, v.g, v.b];
 
   // ---- the smooth light of the disc: the glow of stars too faint to see one by one, brighter along the arms, with
@@ -116,7 +121,7 @@ export function makeGalaxy(o) {
       tint.set(colour(c), i * 3);
     }
     const u = U(); u.young = { value: young }; u.gain = { value: 1 };
-    const L = layer({ count: N, uniforms: u, order: 2,
+    const L = layer({ count: N, head, uniforms: u, order: 2,
       attrs: [['a', 1, a], ['m0', 1, m0], ['yo', 1, y], ['sz', 1, sz], ['tw', 1, tw], ['tint', 3, tint]],
       vertex: `attribute float a,m0,yo,sz,tw; attribute vec3 tint; uniform vec3 young; uniform float gain; varying vec3 vC;
         void main(){ float M=m0+omegaA(a)*time; vec3 p=orbit(a,M,time,yo);
@@ -142,7 +147,7 @@ export function makeGalaxy(o) {
       sz[i] = R * size * (.6 + r() * .8); tint.set(colour(col(ai)), i * 3);
     }
     const u = U(); u.gain = { value: 1 };
-    const L = layer({ count: N, uniforms: u, order, blending: kind === 'dust' ? THREE.NormalBlending : THREE.AdditiveBlending,
+    const L = layer({ count: N, head, uniforms: u, order, blending: kind === 'dust' ? THREE.NormalBlending : THREE.AdditiveBlending,
       attrs: [['a', 1, a], ['off', 1, off], ['ph', 1, ph], ['life', 1, life], ['which', 1, which], ['yo', 1, y], ['sz', 1, sz], ['tint', 3, tint]],
       vertex: `attribute float a,off,ph,life,which,yo,sz; attribute vec3 tint; uniform float gain; varying vec3 vC; varying float vA;
         void main(){ float age=fract(time/life+ph), born=time-age*life;
@@ -164,8 +169,8 @@ export function makeGalaxy(o) {
   // bright knots where new stars are forming, short-lived
   puffs({ N: low ? 260 : 650, size: .013, drift: .22, spread: .035, offset: .03, lifeScale: .6, amin: .2, order: 3, kind: 'knot',
     colour: () => K.clone().lerp(white, r() * .35).multiplyScalar(1.7) });
-  // dark dust along the inner edge of each arm
-  puffs({ N: low ? 1300 : 3200, size: .04, drift: .3, spread: .022, offset: -.07, amin: .28, even: true, order: 4, kind: 'dust',
+  // dark dust along the inner edge of each arm (not in a world of fire, where it would draw a dark ring across the flames)
+  if (o.dust !== false) puffs({ N: low ? 1300 : 3200, size: .04, drift: .3, spread: .022, offset: -.07, amin: .28, even: true, order: 4, kind: 'dust',
     colour: () => new THREE.Color(.025, .018, .02) });
 
   // ---- jewels: the lower worlds are lit by the gems on the serpents' hoods (Vishnu Purana 2.5), drawn as bright
@@ -177,7 +182,7 @@ export function makeGalaxy(o) {
       a[i] = Math.max(hole + .04, .1 + Math.sqrt(r()) * .85); m0[i] = r() * TAU; y[i] = R * (-.008 + r() * .04);
       sz[i] = R * (.008 + r() * .009); tw[i] = r() * TAU; tint.set(colour(pal[i % pal.length].clone().multiplyScalar(2.2)), i * 3);
     }
-    const L = layer({ count: N, uniforms: U(), order: 3,
+    const L = layer({ count: N, head, uniforms: U(), order: 3,
       attrs: [['a', 1, a], ['m0', 1, m0], ['yo', 1, y], ['sz', 1, sz], ['tw', 1, tw], ['tint', 3, tint]],
       vertex: `attribute float a,m0,yo,sz,tw; attribute vec3 tint; varying vec3 vC;
         void main(){ vec3 p=orbit(a,m0+omegaA(a)*time,time,yo);

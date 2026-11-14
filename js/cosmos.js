@@ -9,7 +9,7 @@ import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { S, STOPS, YUGAS } from './content.js';
 import { makeGalaxy } from './galaxy.js';
-import { makeNebula } from './nebula.js';
+import { makeNebula, gasVeil } from './nebula.js';
 import { reduce, mobile, camAt, measure, noWebGL } from './page.js';
 
 let renderer;
@@ -165,9 +165,11 @@ function galaxy(y,o){
 galaxy(6*S,{R:30,A:'#ffe9d0',B:'#ffb27e',C:'#c2457e',K:'#ffd0e0',arms:8,twist:.55,strength:.7,bulge:.08,glow:.55,seed:1});   // Satyaloka: a lotus of light, opening in petals
 // Tapoloka: a world of fire, home of the Vaibhraja gods, whom fire cannot burn (Vishnu Purana 2.7). Its galaxy burns
 // inside a cloud of living flame (js/nebula.js) round a burning star
-{ const tapo=galaxy(5*S,{R:36,A:'#ffd9a8',B:'#ff8a2a',C:'#7a1a00',K:'#ffd27a',arms:3,twist:2.6,glow:.24,white:.08,hole:.06,young:'#ffc46a',seed:2});   // its stars as embers in the fire
-  const { group, mats }=makeNebula({ R:44, H:7, time:DU.time, low:lowTier, renderer });
-  tapo.add(group); tapo.userData.mats.push(...mats); }
+{ const CLOUD={ R:44, H:7 };
+  const tapo=galaxy(5*S,{R:36,A:'#ffd9a8',B:'#ff8a2a',C:'#7a1a00',K:'#ffd27a',arms:3,twist:2.6,glow:.24,white:.08,hole:.06,young:'#ffc46a',seed:2,dust:false,
+    veil:gasVeil(CLOUD)});   // its stars as embers in the fire, dimmed by the gas between them and the eye
+  const { group, mats, update }=makeNebula({ ...CLOUD, time:DU.time, low:lowTier, renderer });
+  tapo.add(group); tapo.userData.mats.push(...mats); tapo.userData.inner=[group]; var tapoGas=()=>{ if(tapo.visible) update(camera); }; }
 galaxy(4*S,{R:40,A:'#f2f6ff',B:'#a8bcff',C:'#3d5cff',K:'#ff9fd8',arms:2,twist:3,seed:3});   // Janaloka
 galaxy(3*S,{R:44,A:'#ecfcff',B:'#8fe2ff',C:'#2678b0',K:'#9ff0ff',arms:4,twist:2.0,glow:.95,seed:4});   // Maharloka
 galaxy(2*S,{R:48,A:'#fffbe6',B:'#ffd46a',C:'#c0781e',K:'#ffe4a0',arms:2,twist:3.6,strength:.85,glow:1.0,seed:5});   // Svarloka
@@ -793,6 +795,11 @@ function frame(now){
       const inside=Math.abs(g.position.y-camera.position.y)<9 && Math.hypot(camera.position.x,camera.position.z)<14;
       g.userData.fade+=((between||inside?0:1)-g.userData.fade)*Math.min(1,dt*3); g.userData.mats.forEach(m=>m.uniforms.fade.value=g.userData.fade); }); }
   galaxies.forEach(G=>{ if(G.group.visible) G.lod(85/camera.position.distanceTo(G.group.position)); });   // a world seen from afar draws fewer, brighter points
+  // worlds that overlap on the screen are drawn far to near, so a nearer world's gas and dust lie over the one beyond
+  // it (from above Tapoloka, Janaloka shows only through the fire, not on top of it). All after the sky, at 0
+  discs.sort((a,b)=>b.position.distanceToSquared(camera.position)-a.position.distanceToSquared(camera.position))
+    .forEach((g,i)=>{ g.renderOrder=1+i; if(g.userData.inner) g.userData.inner.forEach(s=>s.renderOrder=1+i); });
+  tapoGas();
   composer.render();
   updateLabels();
 }

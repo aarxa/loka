@@ -118,7 +118,7 @@ let anchors=[];
 function measure(){ anchors=sections.map(s=>Math.max(0,s.offsetTop+s.offsetHeight/2-innerHeight/2)); anchors[0]=0; }
 measure(); addEventListener('load',measure); document.fonts&&document.fonts.ready.then(measure);
 const lerp=(a,b,t)=>a+(b-a)*t, glerp=(a,b,t)=>a*Math.pow(b/a,t), ease=t=>t*t*(3-2*t);
-const HOLD=.18;                                            // the share of each gap the camera spends holding a shot, at each end
+const HOLD=.18;                                            // the share of each gap the camera spends holding a shot, at each end (a stop's own hold can set it)
 // a stop's shot at s: 0 as you arrive, .5 at its anchor, 1 as you leave. A shot gives [arrive, leave] pairs for its
 // angle a, distance d and height h above the world, and where it looks; a stop without one holds its single view.
 function shotAt(S,s){ const q=S.shot||{}, L=(v,d)=>Array.isArray(v)?lerp(v[0],v[1],ease(s)):(v??d);
@@ -134,9 +134,10 @@ function camAt(sc){
   else { while(i<n-2 && sc>=anchors[i+1]) i++; f=(sc-anchors[i])/Math.max(1,anchors[i+1]-anchors[i]); }
   const A=STOPS[i], B=STOPS[i+1];
   const out=(v,look,fog)=>({ ang:v.ang, dist:v.dist, cy:v.cy, lx:look[0], ly:look[1], lz:look[2], fog });
-  if(f<=HOLD){ const v=shotAt(A,.5+.5*f/HOLD); return out(v,v.look,A.fog); }                  // holding A's shot, leaving it
-  if(f>=1-HOLD){ const v=shotAt(B,.5*(f-(1-HOLD))/HOLD); return out(v,v.look,B.fog); }        // holding B's shot, arriving
-  const e=ease((f-HOLD)/(1-2*HOLD)), a=shotAt(A,1), b=shotAt(B,0), fog=glerp(A.fog,B.fog,e);
+  const hA=A.hold??HOLD, hB=B.hold??HOLD;
+  if(f<=hA){ const v=shotAt(A,.5+.5*f/hA); return out(v,v.look,A.fog); }                      // holding A's shot, leaving it
+  if(f>=1-hB){ const v=shotAt(B,.5*(f-(1-hB))/hB); return out(v,v.look,B.fog); }              // holding B's shot, arriving
+  const e=ease((f-hA)/(1-hA-hB)), a=shotAt(A,1), b=shotAt(B,0), fog=glerp(A.fog,B.fog,e);
   const look=a.look.map((v,j)=>lerp(v,b.look[j],e));
   if(A.via){ const [ang,dist,cy]=through([[a.ang,a.dist,a.cy],...A.via,[b.ang,b.dist,b.cy]],e); return out({ang,dist,cy},look,fog); }
   return out({ ang:lerp(a.ang,b.ang,e), dist:glerp(a.dist,b.dist,e), cy:lerp(a.cy,b.cy,e) },look,fog);
