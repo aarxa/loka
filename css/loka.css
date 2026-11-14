@@ -98,7 +98,9 @@ a.story:hover .story-t,button.story:hover .story-t{color:var(--gold)}
 .wait .cta{white-space:nowrap}
 .wait.busy .cta{filter:brightness(.8);cursor:progress}
 .wait.joined .wait-row{display:none}
-.wait.joined .note{color:var(--gold);font-size:14px;margin-top:0}
+/* the status line under the field: a clear gap, its text lined up with the text inside the field (its padding and border) */
+.wait .note{margin:12px 0 0;padding-left:21px}
+.wait.joined .note{color:var(--gold);font-size:14px;margin-top:0;padding-left:0}   /* joined: the field is gone, so it lines up with the text above */
 .wait .hp{position:absolute;left:-9999px;width:1px;height:1px;opacity:0}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 /* the oceans of Bhurloka */
