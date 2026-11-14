@@ -169,7 +169,7 @@ galaxy(6*S,{R:30,A:'#ffe9d0',B:'#ffb27e',C:'#c2457e',K:'#ffd0e0',arms:8,twist:.5
   const tapo=galaxy(5*S,{R:36,A:'#ffd9a8',B:'#ff8a2a',C:'#7a1a00',K:'#ffd27a',arms:3,twist:2.6,glow:.24,white:.08,hole:.06,young:'#ffc46a',seed:2,dust:false,
     veil:gasVeil(CLOUD)});   // its stars as embers in the fire, dimmed by the gas between them and the eye
   const { group, mats, update }=makeNebula({ ...CLOUD, time:DU.time, low:lowTier, renderer });
-  tapo.add(group); tapo.userData.mats.push(...mats); tapo.userData.inner=[group]; var tapoGas=()=>{ if(tapo.visible) update(camera); }; }
+  tapo.add(group); tapo.userData.mats.push(...mats); var tapoGas=()=>{ if(tapo.visible) update(camera); }; }
 galaxy(4*S,{R:40,A:'#f2f6ff',B:'#a8bcff',C:'#3d5cff',K:'#ff9fd8',arms:2,twist:3,seed:3});   // Janaloka
 galaxy(3*S,{R:44,A:'#ecfcff',B:'#8fe2ff',C:'#2678b0',K:'#9ff0ff',arms:4,twist:2.0,glow:.95,seed:4});   // Maharloka
 galaxy(2*S,{R:48,A:'#fffbe6',B:'#ffd46a',C:'#c0781e',K:'#ffe4a0',arms:2,twist:3.6,strength:.85,glow:1.0,seed:5});   // Svarloka
@@ -440,9 +440,51 @@ const meruCap=sprite('#fff1d6',6,.25); meruCap.position.y=meruTop+2.2; bhu.add(m
 // lower worlds: they turn the other way, have no bright centre (no sun reaches them), and are lit by jewels
 galaxy(-1*S,{R:50,A:'#d6c8ff',B:'#6c4cff',C:'#1c0e46',K:'#b9a0ff',arms:3,twist:2.2,speed:-.8,glow:.7,warmCore:false,white:.12,scale:.46,hole:.1,gems:70,seed:11});   // Atala
 const vitala=galaxy(-2*S,{R:50,A:'#fff2b8',B:'#ffb81e',C:'#4a2600',K:'#ffe08a',arms:2,twist:2.6,speed:-.8,glow:.75,warmCore:false,white:.12,scale:.46,hole:.08,gems:50,seed:12});   // Vitala
-{ const pts=[]; for(let i=0;i<=200;i++){ const a=i/200*Math.PI*2, r=30+Math.sin(a*6)*2.5; pts.push(new THREE.Vector3(Math.cos(a)*r,Math.sin(a*9)*.6,Math.sin(a)*r)); }
-  const river=new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts,true),400,.55,8,true),new THREE.MeshBasicMaterial({color:'#ffcf57',transparent:true,opacity:.85,blending:AD,depthWrite:false}));
-  vitala.add(river); spinners.push([river,-.3]); }   // the river of gold flows round
+// the river Hataki, running with gold (Bhagavata Purana 5.24.17): a ribbon of molten gold winding round the world,
+// wider and narrower as it goes. Its surface is drawn fresh every frame: ripples drawn out along the current and
+// carried downstream, glints where they crest, dark crust cooling on it, ragged banks, and a glow on the disc beside it.
+// The noise is read round a circle, so the loop has no seam
+{ const N=1400, TAU=Math.PI*2, pts=[], s=[0];
+  const rAt=a=>30+2.4*Math.sin(3*a+1)+1.5*Math.sin(7*a+2.2)+.8*Math.sin(13*a+.5);   // a meandering course, not a circle
+  const wAt=a=>2+.8*Math.sin(5*a+.3)+.45*Math.sin(11*a+1.7);                          // half its width, 0.75 to 3.25
+  for(let i=0;i<=N;i++){ const a=i/N*TAU; pts.push([Math.cos(a)*rAt(a),Math.sin(a)*rAt(a)]); if(i) s.push(s[i-1]+Math.hypot(pts[i][0]-pts[i-1][0],pts[i][1]-pts[i-1][1])); }
+  const len=s[N];
+  const ribbon=(spread,frag,blending,order)=>{ const P=[],U=[],W=[],I=[];
+    for(let i=0;i<=N;i++){ const a=i/N*TAU, p=pts[i], b=pts[(i+N-1)%N], f=pts[(i+1)%N];
+      let tx=f[0]-b[0], tz=f[1]-b[1]; const tl=Math.hypot(tx,tz); tx/=tl; tz/=tl;
+      const hw=wAt(a)*spread; for(const side of [-1,1]){ P.push(p[0]-tz*hw*side,.06,p[1]+tx*hw*side); U.push(s[i]/len,side); W.push(wAt(a)); }
+      if(i<N){ const k=i*2; I.push(k,k+1,k+2,k+1,k+3,k+2); } }
+    const g=new THREE.BufferGeometry(); g.setAttribute('position',new THREE.Float32BufferAttribute(P,3)); g.setAttribute('uv',new THREE.Float32BufferAttribute(U,2));
+    g.setAttribute('hw',new THREE.Float32BufferAttribute(W,1)); g.setIndex(I);
+    const m=new THREE.ShaderMaterial({ uniforms:{ time:DU.time, fade:{value:1}, len:{value:len} }, transparent:true, depthWrite:false, side:THREE.DoubleSide, ...blending,
+      vertexShader:`attribute float hw; varying vec2 vUv; varying float vHW; varying vec3 vW;
+        void main(){ vUv=uv; vHW=hw; vec4 w=modelMatrix*vec4(position,1.0); vW=w.xyz; gl_Position=projectionMatrix*viewMatrix*w; }`,
+      fragmentShader:NOISE+`uniform float time, fade, len; varying vec2 vUv; varying float vHW; varying vec3 vW;
+        void main(){ float v=vUv.y, th=vUv.x*6.2831853, k=len/6.2831853, flow=time*1.4/k;   // the current: 1.4 units a second
+          ${frag} }` });
+    const mesh=new THREE.Mesh(g,m); mesh.renderOrder=order; mesh.frustumCulled=false; vitala.userData.mats.push(m); return mesh; };
+  const river=new THREE.Group();
+  // the light of the gold on the disc round it
+  river.add(ribbon(3.2,`float gl=exp(-v*v*5.0)*(0.75+0.5*fbm(vec3(cos(th-flow)*k*0.08,sin(th-flow)*k*0.08,2.0)));
+    gl_FragColor=vec4(vec3(1.0,0.56,0.13)*gl*0.13*fade,1.0);`,{ blending:AD },3.4));
+  // the molten gold itself
+  river.add(ribbon(1,`float x=v*vHW;                                                       // across the river, in units
+    float bank=fbm(vec3(cos(th)*k*0.35,sin(th)*k*0.35,5.0));                                // ragged banks
+    float edge=1.0-smoothstep(0.55-0.25*bank,0.95-0.1*bank,abs(v)); if(edge<=0.0) discard;
+    float n=fbm(vec3(cos(th-flow)*k*0.25,sin(th-flow)*k*0.25,x*0.9));                       // broad swirls, drawn out along the current
+    float st=fbm(vec3(cos(th-flow*1.25)*k*0.5,sin(th-flow*1.25)*k*0.5,x*2.2+n*1.4));        // streaks, quicker in the middle
+    float mid=1.0-abs(v), heat=0.35*mid+1.6*(st-0.5)+1.0*(n-0.5)+0.45;                  // hotter in the middle, swirled by the current
+    vec3 c=mix(vec3(0.24,0.07,0.008),vec3(0.86,0.44,0.05),smoothstep(0.1,0.55,heat));        // deep amber, gold, then the brightest yellow gold
+    c=mix(c,vec3(1.0,0.74,0.26),smoothstep(0.6,1.0,heat));
+    float gt=fbm(vec3(cos(th-flow*1.1)*k*1.1,sin(th-flow*1.1)*k*1.1,x*3.5));                 // glints where the ripples crest
+    c+=vec3(1.0,0.86,0.5)*pow(smoothstep(0.56,0.74,gt),3.0)*1.1;
+    vec3 vd=normalize(cameraPosition-vW); c+=vec3(1.0,0.7,0.3)*pow(1.0-abs(vd.y),4.0)*0.35*(0.5+n);   // the sheen of liquid metal, seen low across it
+    float cr=smoothstep(0.55,0.62,fbm(vec3(cos(th-flow*0.9)*k*0.3+11.0,sin(th-flow*0.9)*k*0.3,x*1.1)));  // crust cooling on it, more toward the banks
+    c=mix(c,vec3(0.07,0.035,0.015),cr*0.75*(0.4+0.6*abs(v)));
+    c*=mix(0.45,1.0,smoothstep(0.95,0.4,abs(v)));                                         // cooler, darker gold along the banks
+    gl_FragColor=vec4(c*edge*fade*0.8,edge*fade*0.92);`,
+    { blending:THREE.CustomBlending, blendSrc:THREE.OneFactor, blendDst:THREE.OneMinusSrcAlphaFactor },3.5));   // over the world's stars and jewels, under its dust
+  vitala.add(river); spinners.push([river,-.3]); }   // the river flows round
 const sutala=galaxy(-3*S,{R:50,A:'#ffe6b8',B:'#ff8a2a',C:'#4a1400',K:'#ffb15c',arms:4,twist:2.0,speed:-.75,glow:.85,warmCore:false,white:.12,scale:.46,hole:.05,gems:60,seed:13});   // Sutala
 { const g=sprite('#ffb060',30,.55); g.position.y=2; sutala.add(g); }
 galaxy(-4*S,{R:50,A:'#ffd6d6',B:'#ff4a4a',C:'#32000e',K:'#ff7a7a',arms:3,twist:2.9,speed:-.75,glow:.7,warmCore:false,white:.12,scale:.46,hole:.1,gems:60,seed:14});   // Talatala
@@ -798,7 +840,7 @@ function frame(now){
   // worlds that overlap on the screen are drawn far to near, so a nearer world's gas and dust lie over the one beyond
   // it (from above Tapoloka, Janaloka shows only through the fire, not on top of it). All after the sky, at 0
   discs.sort((a,b)=>b.position.distanceToSquared(camera.position)-a.position.distanceToSquared(camera.position))
-    .forEach((g,i)=>{ g.renderOrder=1+i; if(g.userData.inner) g.userData.inner.forEach(s=>s.renderOrder=1+i); });
+    .forEach((g,i)=>g.traverse(o=>{ if(o.isGroup) o.renderOrder=1+i; }));   // a group inside a world (Tapoloka's fire, Vitala's river) keeps its world's place
   tapoGas();
   composer.render();
   updateLabels();
