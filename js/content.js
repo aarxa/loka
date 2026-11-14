@@ -43,6 +43,10 @@ export const YUGAS = [
 
 export const OCEANS = [['Salt','#2a7fa8'],['Sugarcane juice','#b8c56a'],['Wine','#8a2a4c'],['Ghee','#e2b04a'],['Curd','#e8e0cc'],['Milk','#f7f4ec'],['Fresh water','#5aa9d8']];
 
+// where waitlist sign-ups go: a Google Apps Script web app (tools/waitlist/Code.gs) on a Google Sheet, which adds a row
+// for each one and emails the sheet's owner
+export const WAITLIST = 'https://script.google.com/macros/s/AKfycbzrF6ZCl50Wt4_TXlz-3dgltRtVTzKTVK_Apl3-nJ3zY6QjqYPMjNSlWyxepqU6Xgd7/exec';
+
 export const STOPS = [
   { id:'intro', nav:'The cosmic egg', grp:'a', cls:'intro', y:-50, dist:700, h:30, ang:-0.5, fog:0.0004,
     kicker:'The Puranic cosmos', title:'Fourteen worlds.<br>One universe.',
@@ -141,7 +145,12 @@ export const STOPS = [
   { id:'end', nav:'A day of Brahma', grp:'z', cls:'end', y:-50, dist:860, h:-40, ang:7.0, fog:.0004,
     kicker:'And then', title:'A day of Brahma.',
     body:`<p>A thousand turns of the four ages make one day of Brahma: 4.32 billion years. Then the worlds dissolve, and it all begins again.</p>
-      <div class="ctas"><button class="cta" id="waitBtn">Join the waitlist</button></div><p class="note" id="waitNote"></p>`,
+      <form class="wait" id="waitForm" novalidate>
+        <label class="sr" for="waitEmail">Your email address</label>
+        <div class="wait-row"><input type="email" id="waitEmail" name="email" required autocomplete="email" inputmode="email" placeholder="you@example.com" spellcheck="false"><button class="cta" type="submit">Join the waitlist</button></div>
+        <input type="text" name="_honey" class="hp" tabindex="-1" autocomplete="off" aria-hidden="true">
+        <p class="note" id="waitNote" role="status" aria-live="polite"></p>
+      </form>`,
     src:'Vishnu Purana 1.3' },
 ];
 
