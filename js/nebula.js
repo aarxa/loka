@@ -6,8 +6,8 @@
 // after that every frame only looks the images up. The cloud is then a stack of transparent sheets through the
 // world's thickness, each turning at its own pace and gently churning, so it has depth and parallax as the camera moves.
 // Sheets alone look like a stack of discs once the camera is among them, so the same fire also fills the world as a
-// true volume of gas, with torn-off wisps of it hanging inside; the sheets show only where they look their best,
-// from above and below.
+// true volume of gas, with torn-off wisps of it that appear close to the camera; the sheets show only where they look
+// their best, from above and below, and a fine turbulence drifting through them makes the filaments lick like flames.
 import * as THREE from 'three';
 
 const PAINT = `
@@ -53,6 +53,7 @@ const PAINT = `
 function paint(renderer, size, seed) {
   const rt = new THREE.WebGLRenderTarget(size, size, { generateMipmaps: true, minFilter: THREE.LinearMipmapLinearFilter, magFilter: THREE.LinearFilter });
   rt.texture.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+  rt.texture.wrapS = rt.texture.wrapT = THREE.RepeatWrapping;   // its edges are empty, so repeating changes nothing; it lets the sheets read it as moving noise
   const scene = new THREE.Scene(), cam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
   const quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), new THREE.ShaderMaterial({ uniforms: { seed: { value: seed } }, fragmentShader: PAINT,
     vertexShader: `varying vec2 vUv; void main(){ vUv=uv; gl_Position=vec4(position.xy,0.0,1.0); }`, depthTest: false, depthWrite: false }));
@@ -127,10 +128,10 @@ export function makeNebula(o) {
   // copy of the painted fire, so it carries the cloud's great swirls and lanes, while the sheets and wisps carry the
   // fine filaments. The star's light scattered by the gas is added exactly, so the star glows through the cloud.
   const vol = new THREE.ShaderMaterial({ ...glow, side: THREE.BackSide,
-    uniforms: { ...shared, fade: { value: 1 } },
+    uniforms: { ...shared, fade: { value: 1 }, emit: { value: .7 } },
     defines: { STEPS: o.low ? 18 : 22, LOD: (o.low ? 3 : 3.5).toFixed(1) },          // phones: a smaller painting, read a little softer
     vertexShader: `varying vec3 vW, vC; void main(){ vec4 w=modelMatrix*vec4(position,1.0); vW=w.xyz; vC=modelMatrix[3].xyz; gl_Position=projectionMatrix*viewMatrix*w; }`,
-    fragmentShader: GAS + `uniform float fade; varying vec3 vW, vC;
+    fragmentShader: GAS + `uniform float fade, emit; varying vec3 vW, vC;
       void main(){
         vec3 ro=cameraPosition-vC, rd=normalize(vW-cameraPosition);
         vec2 s=span(ro,rd); if(s.y<=s.x) discard;
@@ -142,7 +143,7 @@ export function makeNebula(o) {
         vec3 col=vec3(0.0); float T=1.0;
         for(int i=0;i<STEPS;i++){ float u=(float(i)+j)/float(STEPS), x=exp(K*u), dt=L*K*x/(E*float(STEPS));
           vec3 p=ro+rd*(s.x+L*(x-1.0)/E); vec4 g=gasAt(p,LOD+clamp(log2(dt/1.5),0.0,2.0));
-          col+=T*g.rgb*dt*1.6*smoothstep(0.08,0.45,length(p.xz)/R);    // not the painting's glow round the star: the light below does that
+          col+=T*g.rgb*dt*emit*smoothstep(0.08,0.45,length(p.xz)/R);    // not the painting's glow round the star: the light below does that
           T*=exp(-g.a*SIG*dt); }
         // the star's light scattered toward the eye along the ray (exact for a point of light in even gas)
         float tc=dot(-ro,rd), h=sqrt(max(dot(ro,ro)-tc*tc,0.0)+3.0);
@@ -172,6 +173,11 @@ export function makeNebula(o) {
           q+=0.012*vec2(sin(q.y*5.0+time*0.35),cos(q.x*4.0-time*0.3));
           if(dot(q,q)>1.0) discard;
           vec2 uv=q*0.5+0.5;
+          // and it burns: a fine turbulence drifting through it makes the filaments waver and lick like flames, and
+          // patches of it flare up and die down as they pass (the painting itself, repeated and blurred, is the noise)
+          vec4 n1=textureLod(art,uv*4.0+time*vec2(0.031,-0.047)+turn,2.5);
+          uv+=(n1.ra-vec2(0.12,0.2))*0.006;
+          float flare=0.7+0.65*smoothstep(0.08,0.5,textureLod(art,uv*2.3-time*vec2(0.019,0.027)+turn*0.37,3.0).a);
           // the sharp fire, and close round it a little of the same fire blurred (a smaller copy the graphics card
           // keeps anyway, read at a fixed size so it skips the costly sharp filtering): a tight glow on each filament
           vec4 t=texture2D(art,uv), b1=textureLod(art,uv,3.0);
@@ -183,7 +189,7 @@ export function makeNebula(o) {
           float pass=smoothstep(0.4,2.6,abs(cameraPosition.y-vW.y));   // the camera passing through it: fade
           // and the gas between the eye and this part of the sheet veils it
           float k=weight*side*pass*fade*exp(-haze(cameraPosition-vC,v,dist));
-          gl_FragColor=vec4(e*k*flicker*3.6,op*k*0.2); }` });
+          gl_FragColor=vec4(e*k*flicker*flare*3.6,op*k*0.2); }` });
     const sheet = new THREE.Mesh(new THREE.CircleGeometry(1, 96), m);
     sheet.scale.setScalar(o.R); sheet.rotation.x = -Math.PI / 2; sheet.position.y = u * o.H; sheet.frustumCulled = false;
     group.add(sheet); mats.push(m);
@@ -191,7 +197,7 @@ export function makeNebula(o) {
 
   // ---- wisps: torn-off pieces of the same fire, hanging in the gas, that stream past as the camera moves through ----
   // Each always faces the camera, so it never shows an edge, and dissolves before the camera reaches it rather than
-  // bursting through the lens. A wisp sits where its own piece of the painting is, turns with the gas, and lights up
+  // bursting through the lens. Only those near the camera show: from further off they would blur the sharp sheets. A wisp sits where its own piece of the painting is, turns with the gas, and lights up
   // only where that piece holds gas, so together they keep the cloud's shape seen from the side and from inside.
   const W = o.low ? 600 : 1600, rnd = (() => { let s = 977; return () => (s = (s * 16807) % 2147483647) / 2147483647; })();
   const P = new Float32Array(W * 4), Q = new Float32Array(W * 4), base = new Float32Array(W * 8);
@@ -208,8 +214,8 @@ export function makeNebula(o) {
   const order = new Uint16Array(W).map((_, i) => i), depth = new Float32Array(W);
   const fill = () => { for (let n = 0; n < W; n++) { const k = order[n] * 8; for (let j = 0; j < 4; j++) { P[n * 4 + j] = base[k + j]; Q[n * 4 + j] = base[k + 4 + j]; } } iP.needsUpdate = iQ.needsUpdate = true; };
   fill();
-  const wm = new THREE.ShaderMaterial({ ...glow, uniforms: { ...shared, fade: { value: 1 } },
-    vertexShader: GAS + `attribute vec4 iP, iQ; uniform float fade; varying vec2 vC, vUv, vO; varying float vK, vWhich, vPatch;
+  const wm = new THREE.ShaderMaterial({ ...glow, uniforms: { ...shared, fade: { value: 1 }, wNear: { value: 16 }, wFar: { value: 34 } },
+    vertexShader: GAS + `attribute vec4 iP, iQ; uniform float fade, wNear, wFar; varying vec2 vC, vUv, vO; varying float vK, vWhich, vPatch;
       void main(){
         vec2 q=iP.xz; float y=iP.y, sz=iP.w;
         vec2 xz=rot(-turnAt(y))*q*R; vec3 p=vec3(xz.x,y,xz.y);
@@ -220,7 +226,7 @@ export function makeNebula(o) {
         // seen steeply from above or below the sheets already show this gas, so the wisps step back there
         float side=1.0-0.8*smoothstep(0.3,0.65,abs(v.y));
         vK=smoothstep(0.04,0.3,dens)*profile(y)*side*fade
-          *smoothstep(0.2*sz,0.9*sz,dist)*(1.0-smoothstep(60.0,100.0,dist))
+          *smoothstep(0.2*sz,0.9*sz,dist)*(1.0-smoothstep(wNear,wFar,dist))
           *exp(-haze(cameraPosition-(modelMatrix*vec4(0.0,0.0,0.0,1.0)).xyz,v,d));
         if(vK<0.002){ gl_Position=vec4(0.0,0.0,2.0,1.0); return; }              // nothing to draw: off the screen
         float a=iQ.z+iQ.y*time; vO=vec2(cos(a),sin(a)); vC=position.xy; vPatch=sz/(2.0*R);
@@ -235,6 +241,7 @@ export function makeNebula(o) {
         vec3 e=t.rgb*t.rgb*4.0+b.rgb*b.rgb*4.0*0.14;
         gl_FragColor=vec4(e*m*vK*3.5,mix(t.a,b.a,0.3)*m*vK*0.6); }` });
   const wisps = new THREE.Mesh(wg, wm); wisps.frustumCulled = false; group.add(wisps); mats.push(wm);
+
 
   // the burning star: a boiling surface with darker cells, a limb that darkens toward the edge, and a corona.
   // From inside the cloud it is seen through the gas, which dims it a little and spreads its light (the volume adds that)

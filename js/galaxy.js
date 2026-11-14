@@ -58,7 +58,7 @@ function layer({ count, attrs, vertex, fragment, uniforms, blending = THREE.Addi
     o.hole     an empty centre, 0..1 of R       o.gems     jewel lights orbiting in the disc (the lower worlds)
     o.glow     overall brightness               o.scale    how far the light spreads (0.3)
     o.white    how far the stars lean to white (0.3)   o.warmCore false for a world no sun reaches: no warm old centre
-    o.young    colour of the young stars in the arms (blue-white)
+    o.young    colour of the young stars in the arms (blue-white)          o.dust     false: no dark dust in the arms
     o.time, o.px: shared uniforms                o.low: fewer points, for phones
     o.veil     GLSL with veil(world, centre), 0..1: how much of each point's light gets through (a world inside a cloud)
     lod(f) draws only that share (0.1..1) of the stars and puffs, a little brighter each, for a world seen from afar  */
@@ -169,8 +169,8 @@ export function makeGalaxy(o) {
   // bright knots where new stars are forming, short-lived
   puffs({ N: low ? 260 : 650, size: .013, drift: .22, spread: .035, offset: .03, lifeScale: .6, amin: .2, order: 3, kind: 'knot',
     colour: () => K.clone().lerp(white, r() * .35).multiplyScalar(1.7) });
-  // dark dust along the inner edge of each arm
-  puffs({ N: low ? 1300 : 3200, size: .04, drift: .3, spread: .022, offset: -.07, amin: .28, even: true, order: 4, kind: 'dust',
+  // dark dust along the inner edge of each arm (not in a world of fire, where it would draw a dark ring across the flames)
+  if (o.dust !== false) puffs({ N: low ? 1300 : 3200, size: .04, drift: .3, spread: .022, offset: -.07, amin: .28, even: true, order: 4, kind: 'dust',
     colour: () => new THREE.Color(.025, .018, .02) });
 
   // ---- jewels: the lower worlds are lit by the gems on the serpents' hoods (Vishnu Purana 2.5), drawn as bright
