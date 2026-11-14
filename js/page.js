@@ -59,6 +59,9 @@ STOPS.forEach(s=>{
   storyEl.appendChild(sec);
 });
 const sections = [...document.querySelectorAll('section.stop')];
+// every visit and reload starts at the top, at the cosmic egg; only a link to a world (#s-bharata) starts there
+if('scrollRestoration' in history) history.scrollRestoration='manual';
+if(!location.hash) window.scrollTo(0,0);
 
 const io = new IntersectionObserver(es=>es.forEach(e=>{ if(e.isIntersecting) e.target.classList.add('in'); }),{threshold:.25});
 sections.forEach(s=>io.observe(s));
@@ -76,9 +79,19 @@ STOPS.forEach((s,i)=>{
 
 // read mode
 const readBtn=document.getElementById('readBtn');
-function setRead(on){ document.body.classList.toggle('read',on); if(on) document.querySelectorAll('.versions').forEach(d=>d.open=true); readBtn.setAttribute('aria-pressed',on); try{localStorage.setItem('loka-read',on?'1':'0')}catch(e){} requestAnimationFrame(measure); }
+// switching keeps your place: the world you were on (in the cosmos, the stop nearest the scroll; reading, the section
+// at the top third of the screen) is the one you land on, at its stop in the cosmos or at its heading when reading
+function setRead(on,keep=true){
+  const was=document.body.classList.contains('read'); let at=-1;
+  if(keep&&was!==on){ if(was){ const y=innerHeight*.3; at=sections.findIndex(s=>s.getBoundingClientRect().bottom>y); if(at<0) at=sections.length-1; } else at=activeIndex(scrollY); }
+  document.body.classList.toggle('read',on); if(on) document.querySelectorAll('.versions').forEach(d=>d.open=true); readBtn.setAttribute('aria-pressed',on); try{localStorage.setItem('loka-read',on?'1':'0')}catch(e){}
+  if(at<0){ requestAnimationFrame(measure); return; }
+  measure();
+  window.scrollTo(0,on?(at?Math.max(0,sections[at].offsetTop-40):0):anchors[at]);
+  dispatchEvent(new Event('loka-jump'));   // the cosmos goes straight there, without gliding across the worlds between
+}
 readBtn.addEventListener('click',()=>setRead(!document.body.classList.contains('read')));
-try{ if(localStorage.getItem('loka-read')==='1') setRead(true); }catch(e){}
+try{ if(localStorage.getItem('loka-read')==='1') setRead(true,false); }catch(e){}
 
 document.addEventListener('click',e=>{
   const mb=e.target.closest('.more-btn');
