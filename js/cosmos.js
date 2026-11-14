@@ -734,19 +734,34 @@ function resize(){ renderer.setSize(innerWidth,innerHeight); composer.setSize(in
   camera.updateProjectionMatrix(); measure(); }
 addEventListener('resize',resize); resize();
 
+// film mode (index.html?film, used by tools/film): frames rendered one at a time at a set size, time and camera
+const FILM=/[?&]film\b/.test(location.search); let FC=null;
+if(FILM){ removeEventListener('resize',resize);
+  window.__loka={ canvas:renderer.domElement, finish, bloom, camera, scene, axisMat,
+    size(w,h,pr){ renderer.setPixelRatio(1); renderer.setSize(w,h,false); composer.setPixelRatio(1); composer.setSize(w,h); finish.uniforms.res.value.set(w,h);
+      starU.pr.value=pr; camera.aspect=w/h; camera.clearViewOffset(); camera.userData.sh=0; camera.updateProjectionMatrix(); GU.px.value=pxFor(); },
+    render(t,dt,c){ FC=c; frame(t*1000,dt); },
+    save(){ return [discs.map(g=>g.userData.fade), sunBB.material.uniforms.fade.value, dharmaPts.material.opacity]; },
+    load(s){ discs.forEach((g,i)=>g.userData.fade=s[0][i]); sunBB.material.uniforms.fade.value=s[1]; dharmaPts.material.opacity=s[2]; } };
+}
 let last=performance.now();
-function frame(now){
-  requestAnimationFrame(frame);
+function frame(now,fdt){
+  if(!FILM) requestAnimationFrame(frame);
   if(document.body.classList.contains('read')) return;
-  const dt=Math.min(.05,(now-last)/1000); last=now; const t=now/1000;
+  const dt=FILM?fdt:Math.min(.05,(now-last)/1000); last=now; const t=now/1000;
   const tg=camAt(scrollY); const k=reduce?1:1-Math.exp(-dt*3.2);
-  for(const key in tg) cur[key]+=(tg[key]-cur[key])*k;
+  if(FC){ cur.lx=FC.look[0]; cur.ly=FC.look[1]; cur.lz=FC.look[2]; cur.fog=FC.fog; } else for(const key in tg) cur[key]+=(tg[key]-cur[key])*k;
   const drift=reduce?0:Math.sin(t*.07)*.12;
   // the camera answers the mouse a little, as if the screen were a window
   ptr.sx+=(ptr.x-ptr.sx)*Math.min(1,dt*2.5); ptr.sy+=(ptr.y-ptr.sy)*Math.min(1,dt*2.5);
   const a=cur.ang+drift+ptr.sx*.035, d=cur.dist*(camera.aspect<.8?1.35:1);
   camera.position.set(Math.sin(a)*d,cur.cy-ptr.sy*1.4,Math.cos(a)*d);
   camera.lookAt(cur.lx,cur.ly,cur.lz);
+  if(FC){ camera.position.fromArray(FC.pos); camera.lookAt(cur.lx,cur.ly,cur.lz); if(FC.roll) camera.rotateZ(FC.roll);
+    if(camera.fov!==FC.fov){ camera.fov=FC.fov; camera.updateProjectionMatrix(); GU.px.value=pxFor(); }
+    const sh=FC.shift||0; if(sh!==camera.userData.sh){ camera.userData.sh=sh; const v=renderer.getDrawingBufferSize(new THREE.Vector2());
+      if(sh) camera.setViewOffset(v.x,v.y,-v.x*sh,0,v.x,v.y); else camera.clearViewOffset(); camera.updateProjectionMatrix(); } }
+  else
   // scroll fast and the view widens a touch; stop, and it settles back
   { const v=Math.abs(scrollY-lastY)/Math.max(dt,1e-3); lastY=scrollY; const target=50+(reduce?0:Math.min(7,v*.0035));
     const fov=camera.fov+(target-camera.fov)*Math.min(1,dt*(target>camera.fov?6:2));
@@ -776,7 +791,7 @@ function frame(now){
   if(!reduce){
     spinners.forEach(([g,s])=>g.rotation.y+=dt*.02*s);
     lotus.rotation.y+=dt*.05; bhu.rotation.y=0;
-    const sa=t*.08; sun.position.set(Math.cos(sa)*26,1.5*S,Math.sin(sa)*26);
+    const sa=FC&&FC.sunA!=null?FC.sunA:t*.08; sun.position.set(Math.cos(sa)*26,1.5*S,Math.sin(sa)*26);
     for(let i=0;i<DN;i++){ let y=dpos[i*3+1]+dspd[i]*dt; if(y>270) y=-312; dpos[i*3+1]=y; }
     dGeo.attributes.position.needsUpdate=true;
     if(sheshaTick) sheshaTick(t);
@@ -794,7 +809,7 @@ function frame(now){
       g.userData.fade+=((between||inside?0:1)-g.userData.fade)*Math.min(1,dt*3); g.userData.mats.forEach(m=>m.uniforms.fade.value=g.userData.fade); }); }
   galaxies.forEach(G=>{ if(G.group.visible) G.lod(85/camera.position.distanceTo(G.group.position)); });   // a world seen from afar draws fewer, brighter points
   composer.render();
-  updateLabels();
+  if(!FILM) updateLabels();
 }
-requestAnimationFrame(frame);
+if(!FILM) requestAnimationFrame(frame);
 }

@@ -7,3 +7,7 @@ assets/nasa-starmap/
 .vscode/
 .idea/
 __pycache__/
+tools/film/enc
+tools/film/mux
+tools/film/grab
+tools/film/chrome-cdp/
