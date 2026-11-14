@@ -1,6 +1,6 @@
 // Loka: the page. Builds each world's text, the rail and read mode, and turns scrolling into the camera path
 // the cosmos follows (camAt). The 3D scene itself is in cosmos.js.
-import { STOPS, YUGAS, DEEP, QUOTES, FACTS, GLOSSARY, READING } from './content.js';
+import { STOPS, YUGAS, DEEP, QUOTES, FACTS, GLOSSARY, READING, WAITLIST } from './content.js';
 
 export const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
 export const mobile = matchMedia('(max-width:760px)');
@@ -81,10 +81,30 @@ readBtn.addEventListener('click',()=>setRead(!document.body.classList.contains('
 try{ if(localStorage.getItem('loka-read')==='1') setRead(true); }catch(e){}
 
 document.addEventListener('click',e=>{
-  if(e.target.id==='waitBtn'){ document.getElementById('waitNote').textContent='The waitlist opens soon.'; }
   const mb=e.target.closest('.more-btn');
   if(mb){ const c=mb.closest('.card'), open=c.classList.toggle('open'); mb.setAttribute('aria-expanded',open); mb.textContent=open?'Show less':'Read more'; }
 });
+
+// the waitlist: an email address, sent to a Google Sheet that keeps it and emails us. A hidden field catches bots, which
+// fill in every field; people never see it. Once someone has joined, the form says so on later visits too
+{ const f=document.getElementById('waitForm');
+  if(f){ const note=document.getElementById('waitNote'), input=f.querySelector('input[name=email]'), btn=f.querySelector('button');
+    const done=()=>{ f.classList.add('joined'); note.textContent='You’re on the list. We’ll write once, when Loka opens.'; };
+    try{ if(localStorage.getItem('loka-wait')==='1') done(); }catch(e){}
+    f.addEventListener('submit',async e=>{ e.preventDefault(); if(f.classList.contains('joined')||f.classList.contains('busy')) return;
+      const email=input.value.trim();
+      if(!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)){ note.textContent='That doesn’t look like an email address.'; input.focus(); return; }
+      if(f._honey.value){ done(); return; }                                       // a bot: thank it, send nothing
+      if(!WAITLIST){ note.textContent='The waitlist opens soon.'; return; }
+      f.classList.add('busy'); btn.disabled=true; note.textContent='Joining…';
+      try{ // a plain form post, which needs no permission check from the browser before it is sent
+        const r=await fetch(WAITLIST,{ method:'POST', body:new URLSearchParams({ email, device:matchMedia('(pointer: coarse)').matches?'phone':'laptop' }) });
+        const j=await r.json().catch(()=>({}));
+        if(!r.ok||j.ok!==true) throw new Error(j.error||r.status);
+        try{ localStorage.setItem('loka-wait','1'); }catch(e){}
+        done();
+      }catch(err){ console.warn('waitlist',err); note.textContent='That didn’t go through. Please try again in a moment.'; }
+      f.classList.remove('busy'); btn.disabled=false; }); } }
 
 // tap or hover a term for its definition
 const pop=document.createElement('div'); pop.className='gpop'; pop.setAttribute('role','tooltip'); pop.id='gpop'; pop.hidden=true; document.body.appendChild(pop);
