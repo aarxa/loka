@@ -8,7 +8,7 @@ Fall through the fourteen worlds of the Puranas, from Brahma’s world down to t
 <p align="center">
   <a href="https://aarxa.github.io/loka/"><b>Open the live site</b></a> &nbsp;·&nbsp;
   <a href="https://aarxa.github.io/loka/media/loka-film.mp4"><b>Watch the film</b></a> &nbsp;·&nbsp;
-  <a href="https://github.com/aarxa/loka/releases/tag/film-v1">Download it in 4K</a>
+  <a href="https://github.com/aarxa/loka/releases/tag/film-v1">Download it</a>
 </p>
 
 # Loka
@@ -21,7 +21,7 @@ You travel through a 3D cosmos of the fourteen worlds of the Puranas, and each w
 
 <a href="https://aarxa.github.io/loka/media/loka-film.mp4"><img src="media/readme/preview.webp" alt="Highlights of the Loka film: the lotus of Satyaloka, Tapoloka’s fire, the galaxies, the earth and Mount Meru, Ananta Shesha" width="100%"></a>
 
-A 77-second flight from the cosmic egg down through every world to Ananta Shesha, then back out through the egg. It was rendered frame by frame from the site itself at 4K, with a tanpura-style drone made for it. [Watch it](https://aarxa.github.io/loka/media/loka-film.mp4), or [download the 4K master](https://github.com/aarxa/loka/releases/tag/film-v1).
+A 77-second flight from the cosmic egg down through every world to Ananta Shesha, then back out through the egg. It was rendered frame by frame from the site itself at 4K, with a tanpura-style drone made for it. [Watch it](https://aarxa.github.io/loka/media/loka-film.mp4), or [download it in 1080p](https://github.com/aarxa/loka/releases/tag/film-v1).
 
 ## The worlds
 
