@@ -1,0 +1,47 @@
+Copyright © 2026 Aarya Rajgor. All rights reserved.
+
+Loka is the property of Aarya Rajgor. This covers everything in this
+repository and on its website, https://aarxa.github.io/loka/, except the
+third-party material listed below:
+
+  - the source code, the writing and the design;
+  - the 3D scenes, the images, the film and all other media.
+
+NO LICENCE IS GRANTED. Without prior written permission from Aarya Rajgor, you
+may not do any of the following with any part of Loka, in whole or in part, by
+any means:
+
+  - copy or reproduce it;
+  - modify, adapt or translate it;
+  - distribute, publish, display or perform it;
+  - sell or sublicense it;
+  - make derivative works from it;
+  - use it to train or improve machine-learning or AI models.
+
+You may visit the website and look through this repository on GitHub, for
+personal and non-commercial purposes only. Because the repository is public on
+GitHub, GitHub's Terms of Service also let GitHub users view it and fork it on
+GitHub. That gives no right to use, copy or reuse any of it anywhere else.
+
+Third-party material
+--------------------
+Some parts were made by others. Each keeps its own licence, and that licence
+applies to that part only. README.md lists them under "Credits".
+
+  - three.js (vendor/three/): MIT License; see vendor/three/LICENSE
+  - Cormorant Garamond, Newsreader, Inter and Tiro Devanagari Sanskrit
+    (fonts/): SIL Open Font License 1.1; see the OFL files in fonts/
+  - "King Cobra" by Anthony Yanez, CC BY 4.0, used in modified form for
+    Shesha's heads (assets/models/, assets/tex/naga_*)
+  - Poly Haven textures (aerial_grass_rock, cliff_side): CC0
+  - Deep Star Maps 2020, NASA/Goddard Scientific Visualization Studio
+  - The water normals texture from the three.js examples: MIT License
+  - Quotations from 19th-century translations by H. H. Wilson, K. M. Ganguli
+    and R. T. H. Griffith, which are in the public domain
+
+Permission
+----------
+To ask for permission to use any part of Loka, contact Aarya Rajgor through
+https://github.com/aarxa.
+
+Loka is provided "as is", without warranty of any kind.
