@@ -748,6 +748,7 @@ const ptr={x:0,y:0,sx:0,sy:0}; let lastY=scrollY;
 // the finger, and the camera catches up quicker instead
 let smoothY=scrollY, wasRead=false;
 const story=document.getElementById('story'), foot=document.querySelector('.site-foot'), glide=matchMedia('(pointer: fine)');
+addEventListener('loka-jump',()=>{ smoothY=scrollY; shift(0); });
 const shift=y=>{ const v=y?`translate3d(0,${y.toFixed(1)}px,0)`:''; if(story.style.transform!==v){ story.style.transform=v; if(foot) foot.style.transform=v; } };
 if(!reduce) addEventListener('pointermove',e=>{ if(e.pointerType!=='mouse') return; ptr.x=e.clientX/innerWidth*2-1; ptr.y=e.clientY/innerHeight*2-1; },{passive:true});
 
