@@ -6,9 +6,7 @@
 Fall through the fourteen worlds of the Puranas, from Brahma’s world down to the serpent who holds them all.</p>
 
 <p align="center">
-  <a href="https://aarxa.github.io/loka/"><b>Open the live site</b></a> &nbsp;·&nbsp;
-  <a href="https://aarxa.github.io/loka/media/loka-film.mp4"><b>Watch the film</b></a> &nbsp;·&nbsp;
-  <a href="https://github.com/aarxa/loka/releases/tag/film-v1">Download it</a>
+  <a href="https://aarxa.github.io/loka/"><b>Open the live site</b></a>
 </p>
 
 # Loka
@@ -17,31 +15,9 @@ You travel through a 3D cosmos of the fourteen worlds of the Puranas, and each w
 
 *Loka is a working title. This is an early prototype.*
 
-## The film
-
-<a href="https://aarxa.github.io/loka/media/loka-film.mp4"><img src="media/readme/preview.webp" alt="Highlights of the Loka film: the lotus of Satyaloka, Tapoloka’s fire, the galaxies, the earth and Mount Meru, Ananta Shesha" width="100%"></a>
-
-A 77-second flight from the cosmic egg down through every world to Ananta Shesha, then back out through the egg. It was rendered frame by frame from the site itself at 4K, with a tanpura-style drone made for it. [Watch it](https://aarxa.github.io/loka/media/loka-film.mp4), or [download it in 1080p](https://github.com/aarxa/loka/releases/tag/film-v1).
-
-## The worlds
-
-| | |
-|:---:|:---:|
-| <img src="media/readme/satyaloka.jpg" alt="Satyaloka: a lotus of light over a disc of stars"><br>**Satyaloka.** The world of Brahma, highest of all. | <img src="media/readme/tapoloka.jpg" alt="Tapoloka: a burning star in a sea of fire"><br>**Tapoloka.** Home of the gods the fire that ends the world cannot burn. |
-| <img src="media/readme/janaloka.jpg" alt="Janaloka: a blue-white spiral galaxy"><br>**Janaloka.** Home of the mind-born sons of Brahma. | <img src="media/readme/svarloka.jpg" alt="Svarloka: a golden spiral under the pole star"><br>**Svarloka.** Indra’s heaven, reaching from the sun to Dhruva, the pole star. |
-| <img src="media/readme/bhurloka.jpg" alt="Bhurloka: ring continents and seas around Mount Meru"><br>**Bhurloka.** The earth as a lotus: Meru at the centre, seven continents ringed by seven seas. | <img src="media/readme/meru.jpg" alt="Mount Meru, golden, wider at the top"><br>**Mount Meru.** Wider at the summit than at the base, with Jambudvipa round it. |
-| <img src="media/readme/rasatala.jpg" alt="Rasatala: a red spiral galaxy"><br>**Rasatala.** The fortress of the Daityas and Danavas. | <img src="media/readme/patala.jpg" alt="Patala: a blue galaxy scattered with coloured jewels"><br>**Patala.** The world of the nagas, lit by the jewels on their hoods. |
-| <img src="media/readme/shesha.jpg" alt="Ananta Shesha: a seven-hooded white serpent on its coils"><br>**Ananta Shesha.** The endless serpent beneath all the worlds. | <img src="media/readme/from-below.jpg" alt="The worlds seen from below, one above another"><br>**From below.** The worlds stacked up the cosmic axis. |
-
 ## The site
 
-<img src="media/readme/site-satyaloka.jpg" alt="The Loka site on a laptop: Satyaloka’s text and a quote from the Vishnu Purana beside the lotus, with the rail of all fourteen worlds" width="100%">
-
-Each world comes with its text, its sources and quotes from public-domain translations. The rail on the right jumps between worlds, and **Read** opens everything as plain text.
-
-<img src="media/readme/site-phone.jpg" alt="The Loka site on a phone: the cosmic egg, Tapoloka, Bhurloka and Ananta Shesha, each with its text in a card" width="100%">
-
-On a phone, each world’s text sits in a card under the scene.
+Each world comes with its text, its sources and quotes from public-domain translations. The rail on the right jumps between worlds, and **Read** opens everything as plain text. The best way to see it is to [open it](https://aarxa.github.io/loka/) and scroll.
 
 ## How it’s made
 
@@ -50,7 +26,6 @@ On a phone, each world’s text sits in a card under the scene.
 - **Tapoloka’s fire:** painted once at load into high-resolution textures from layered noise. The same fire fills the world as a volume of gas the camera flies through, with wisps that stream past and sharp sheets for the view from above, round a burning star.
 - **The earth:** day and night follow the sun as it circles Meru. There are mountain ranges, clouds that cast shadows, and seas with swell and surf.
 - **The camera:** scrolling flies it along a path through the worlds. The top worlds each have their own moving shot.
-- **The film:** rendered one frame at a time from the site at 4K, then encoded with the Mac’s hardware video encoder. The tools are on the `film-kit` branch.
 
 ## Run it
 
@@ -79,7 +54,7 @@ Then go to <http://localhost:5173>. The page needs a server: browsers won't run 
 | `assets/tex/` | Textures for the oceans, continents, Meru and Shesha |
 | `assets/models/` | Shesha's hooded heads |
 | `tools/` | Scripts that made the processed assets |
-| `media/` | The web version of the film and the images in this README |
+| `media/readme/hero.jpg` | The image at the top of this README |
 
 Everything is served from the repo, with no build step: the scripts are plain ES modules.
 
