@@ -735,7 +735,8 @@ function updateLabels(){
     const near=Math.abs(cur.ly-p.y)<34 && camera.position.distanceTo(p)<230;
     p.project(camera); const vis=near && p.z<1 && Math.abs(p.x)<1.1 && Math.abs(p.y)<1.1;
     l.el.style.opacity=vis?1:0;
-    if(vis){ l.el.style.transform=`translate(${((p.x+1)/2*innerWidth).toFixed(1)}px,${((1-p.y)/2*innerHeight).toFixed(1)}px) translate(-50%,-100%)`; }
+    if(vis){ const hw=(l.w||(l.w=l.el.offsetWidth))/2+8, x=Math.min(innerWidth-hw,Math.max(hw,(p.x+1)/2*innerWidth));   // kept on screen
+      l.el.style.transform=`translate(${x.toFixed(1)}px,${((1-p.y)/2*innerHeight).toFixed(1)}px) translate(-50%,-100%)`; }
   });
 }
 

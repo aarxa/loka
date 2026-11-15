@@ -179,32 +179,37 @@ body.read .card>*{opacity:1;transform:none;transition:none}
 body.read .intro h2,body.read .end h2{font-size:64px}
 body.read .hint{display:none}
 @media (prefers-reduced-motion: reduce){.card>*{transform:none;transition:opacity .3s}.hint i{animation:none}}
-/* phones: the text sits in a short sheet at the bottom, so the world stays in view */
+/* phones: no boxes. The words sit straight on the cosmos, over a soft dark fade that rises from the bottom of the screen,
+   so the world stays in view above them; "Read more" deepens the fade as the text grows */
 @media (max-width:760px){
   header{padding:0 16px;height:58px}
   .logo{font-size:19px}
-  .scrim{display:none}
-  nav.map{display:none}
-  section.stop{align-items:flex-end;padding:76px 10px 12px}
-  .card{max-width:none;background:rgba(9,8,15,.86);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid var(--rule);border-radius:20px;padding:20px 20px 16px}
+  nav.map,.scrim.r{display:none}
+  .scrim{top:auto;bottom:0;width:100%;height:62svh;background:linear-gradient(0deg,rgba(6,5,10,.94) 0%,rgba(6,5,10,.82) 30%,rgba(6,5,10,.42) 62%,rgba(6,5,10,0) 100%);transition:height .6s var(--ease),background .6s}
+  body.more-open .scrim{height:100svh;background:linear-gradient(0deg,rgba(6,5,10,.95) 0%,rgba(6,5,10,.9) 55%,rgba(6,5,10,.55) 85%,rgba(6,5,10,.2) 100%)}
+  section.stop{min-height:100svh;align-items:flex-end;padding:76px 22px calc(26px + env(safe-area-inset-bottom))}
+  .card{max-width:none;text-shadow:0 1px 18px rgba(4,3,8,.9),0 0 2px rgba(4,3,8,.6)}
   .kicker{margin-bottom:10px}
-  .card h2{font-size:40px}
-  .body{margin-top:14px;font-size:16.5px}
-  body:not(.read) .stop:not(.intro):not(.end) .card:not(.open) .body{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden}
+  .card h2{font-size:44px}
+  .body{margin-top:12px;font-size:16.5px}
+  body:not(.read) .stop:not(.intro):not(.end) .card:not(.open) .body{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
   body:not(.read) .stop:not(.intro):not(.end) .card:not(.open) .x-more{display:none}
-  .more-btn{display:inline-flex;align-items:center;gap:8px;margin-top:10px;padding:6px 0;background:none;border:0;font:500 12.5px/1 var(--ui);letter-spacing:.04em;color:var(--gold);cursor:pointer}
+  body:not(.read) .intro .quote,body:not(.read) .intro .meta,body:not(.read) .end .quote,body:not(.read) .end .meta{display:none}
+  body.more-open #labels{opacity:0}
+  #labels{transition:opacity .4s}
+  .more-btn{display:inline-flex;align-items:center;gap:8px;margin-top:8px;padding:8px 0;background:none;border:0;font:500 12.5px/1 var(--ui);letter-spacing:.04em;color:var(--gold);cursor:pointer}
   .more-btn::after{content:'';width:5px;height:5px;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;transform:translateY(-2px) rotate(45deg);transition:transform .25s}
   .card.open .more-btn::after{transform:translateY(1px) rotate(-135deg)}
-  .intro .card,.end .card{background:linear-gradient(rgba(7,6,12,0),rgba(7,6,12,.88) 22%);border:0;backdrop-filter:none;-webkit-backdrop-filter:none;border-radius:0;padding:28px 8px 10px}
+  .intro .card,.end .card{padding:0}
   .intro h2,.end h2{font-size:50px}
   .wait-row{flex-direction:column}
   .intro .body,.end .body{font-size:17px}
   .intro .body p:nth-of-type(2){display:none}
+  .hint{margin-top:26px}
   .stories-here,.meta,#stories,.legend{margin-top:20px}
   .site-foot{grid-template-columns:1fr;gap:28px;padding:44px 22px 28px}
   .contents ol{columns:1}
   .facts dl>div,.glossary dl>div{grid-template-columns:1fr}
-  body.read .card{background:none;border:0;backdrop-filter:none;-webkit-backdrop-filter:none;padding:0}
   body.read .card .body{display:block}
   body.read .card .x-more{display:block}
   body.read .more-btn{display:none}
