@@ -93,9 +93,15 @@ function setRead(on,keep=true){
 readBtn.addEventListener('click',()=>setRead(!document.body.classList.contains('read')));
 try{ if(localStorage.getItem('loka-read')==='1') setRead(true,false); }catch(e){}
 
+// an opened card closes once its world has scrolled away, so the deeper fade behind it goes too
+function closeCard(c){ c.classList.remove('open'); const mb=c.querySelector('.more-btn'); if(mb){ mb.setAttribute('aria-expanded','false'); mb.textContent='Read more'; }
+  document.body.classList.toggle('more-open',!!document.querySelector('.card.open')); }
+const away = new IntersectionObserver(es=>es.forEach(e=>{ const c=e.target.querySelector('.card.open'); if(c&&e.intersectionRatio<.35) closeCard(c); }),{threshold:[0,.35]});
+sections.forEach(s=>away.observe(s));
 document.addEventListener('click',e=>{
   const mb=e.target.closest('.more-btn');
-  if(mb){ const c=mb.closest('.card'), open=c.classList.toggle('open'); mb.setAttribute('aria-expanded',open); mb.textContent=open?'Show less':'Read more'; }
+  if(mb){ const c=mb.closest('.card'), open=c.classList.toggle('open'); mb.setAttribute('aria-expanded',open); mb.textContent=open?'Show less':'Read more';
+    document.body.classList.toggle('more-open',!!document.querySelector('.card.open')); }
 });
 
 // the waitlist: an email address, sent to a Google Sheet that keeps it and emails us. A hidden field catches bots, which
